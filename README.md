@@ -27,4 +27,9 @@ Logs and plots are written to `ml/logs/` and `ml/plots/`. See `ml/README.md` for
 
 ## Development
 
+```bash
+pip install ruff pre-commit
+pre-commit install   # runs ruff automatically on every git commit
+```
+
 Copy `.env.example` to `.env` for local settings. `.env` is never committed.
