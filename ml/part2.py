@@ -1,8 +1,10 @@
 import itertools
 import os
 import warnings
+
 import matplotlib
-matplotlib.use('Agg')
+
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -22,19 +24,19 @@ class ObesityDataLoader:
 
 
 class ObesityPreprocessor:
-    BINARY_COLUMNS = ['family_history_with_overweight', 'FAVC', 'SMOKE', 'SCC']
-    ORDINAL_COLUMNS = ['CAEC', 'CALC']
-    ORDINAL_MAP = {'no': 0, 'Sometimes': 1, 'Frequently': 2, 'Always': 3}
+    BINARY_COLUMNS = ["family_history_with_overweight", "FAVC", "SMOKE", "SCC"]
+    ORDINAL_COLUMNS = ["CAEC", "CALC"]
+    ORDINAL_MAP = {"no": 0, "Sometimes": 1, "Frequently": 2, "Always": 3}
     OBESITY_ORDER = {
-        'Insufficient_Weight': 0,
-        'Normal_Weight': 1,
-        'Overweight_Level_I': 2,
-        'Overweight_Level_II': 3,
-        'Obesity_Type_I': 4,
-        'Obesity_Type_II': 5,
-        'Obesity_Type_III': 6,
+        "Insufficient_Weight": 0,
+        "Normal_Weight": 1,
+        "Overweight_Level_I": 2,
+        "Overweight_Level_II": 3,
+        "Obesity_Type_I": 4,
+        "Obesity_Type_II": 5,
+        "Obesity_Type_III": 6,
     }
-    TARGET_COLUMN = 'NObeyesdad'
+    TARGET_COLUMN = "NObeyesdad"
 
     def __init__(self, low_corr_threshold: float = 0.05):
         self.low_corr_threshold = low_corr_threshold
@@ -47,22 +49,24 @@ class ObesityPreprocessor:
         df = df.dropna()
         df = df.drop_duplicates()
 
-        df['Gender'] = df['Gender'].map({'Female': 0, 'Male': 1})
+        df["Gender"] = df["Gender"].map({"Female": 0, "Male": 1})
         for col in self.BINARY_COLUMNS:
-            df[col] = df[col].map({'yes': 1, 'no': 0})
+            df[col] = df[col].map({"yes": 1, "no": 0})
         for col in self.ORDINAL_COLUMNS:
             df[col] = df[col].map(self.ORDINAL_MAP)
 
-        df = pd.get_dummies(df, columns=['MTRANS'], prefix='MTRANS', drop_first=True)
-        mtrans_cols = [c for c in df.columns if c.startswith('MTRANS_')]
+        df = pd.get_dummies(df, columns=["MTRANS"], prefix="MTRANS", drop_first=True)
+        mtrans_cols = [c for c in df.columns if c.startswith("MTRANS_")]
         df[mtrans_cols] = df[mtrans_cols].astype(int)
 
         df[self.TARGET_COLUMN] = df[self.TARGET_COLUMN].map(self.OBESITY_ORDER)
 
-        df = df.drop(columns=['Weight'])
+        df = df.drop(columns=["Weight"])
 
         correlations = df.corr(numeric_only=True)[self.TARGET_COLUMN].drop(self.TARGET_COLUMN)
-        self.dropped_columns_ = correlations[correlations.abs() < self.low_corr_threshold].index.tolist()
+        self.dropped_columns_ = correlations[
+            correlations.abs() < self.low_corr_threshold
+        ].index.tolist()
         df = df.drop(columns=self.dropped_columns_)
 
         y_clean = df[self.TARGET_COLUMN]
@@ -98,28 +102,30 @@ class RegressionEvaluator:
     @classmethod
     def evaluate(cls, y_true: np.ndarray, y_pred: np.ndarray) -> dict:
         return {
-            'mse': cls.mse(y_true, y_pred),
-            'rmse': cls.rmse(y_true, y_pred),
-            'r2': cls.r2(y_true, y_pred),
-            'explained_variance': cls.explained_variance(y_true, y_pred),
+            "mse": cls.mse(y_true, y_pred),
+            "rmse": cls.rmse(y_true, y_pred),
+            "r2": cls.r2(y_true, y_pred),
+            "explained_variance": cls.explained_variance(y_true, y_pred),
         }
 
 
 class SklearnLinearRegressionModel:
-    def __init__(self, learning_rate_init: float = 0.01, max_iter: int = 1000, random_state: int = 42):
+    def __init__(
+        self, learning_rate_init: float = 0.01, max_iter: int = 1000, random_state: int = 42
+    ):
         self.learning_rate_init = learning_rate_init
         self.max_iter = max_iter
         self.random_state = random_state
         self.model = SGDRegressor(
-            loss='squared_error',
+            loss="squared_error",
             penalty=None,
-            learning_rate='constant',
+            learning_rate="constant",
             eta0=learning_rate_init,
             random_state=random_state,
         )
         self.cost_history_ = []
 
-    def fit(self, X: np.ndarray, y: np.ndarray) -> 'SklearnLinearRegressionModel':
+    def fit(self, X: np.ndarray, y: np.ndarray) -> "SklearnLinearRegressionModel":
         self.cost_history_ = []
 
         for _ in range(self.max_iter):
@@ -149,21 +155,29 @@ class GridSearchLogger:
         self.divergence_factor = divergence_factor
         self.trials_ = []
 
-    def run(self, param_grid: dict, X_train: np.ndarray, y_train: np.ndarray,
-            X_test: np.ndarray, y_test: np.ndarray) -> list:
+    def run(
+        self,
+        param_grid: dict,
+        X_train: np.ndarray,
+        y_train: np.ndarray,
+        X_test: np.ndarray,
+        y_test: np.ndarray,
+    ) -> list:
         keys = list(param_grid.keys())
         combos = list(itertools.product(*param_grid.values()))
         self.trials_ = []
 
-        baseline_mse = RegressionEvaluator.mse(y_train, np.full_like(y_train, y_train.mean(), dtype=float))
+        baseline_mse = RegressionEvaluator.mse(
+            y_train, np.full_like(y_train, y_train.mean(), dtype=float)
+        )
         divergence_threshold = baseline_mse * self.divergence_factor
 
         log_dir = os.path.dirname(self.log_path)
         if log_dir:
             os.makedirs(log_dir, exist_ok=True)
 
-        with open(self.log_path, 'w') as log_file:
-            log_file.write(','.join(keys) + ',train_mse,test_mse,status\n')
+        with open(self.log_path, "w") as log_file:
+            log_file.write(",".join(keys) + ",train_mse,test_mse,status\n")
 
             for combo in combos:
                 params = dict(zip(keys, combo))
@@ -175,27 +189,29 @@ class GridSearchLogger:
                     test_mse = RegressionEvaluator.mse(y_test, model.predict(X_test))
                     diverged = not np.isfinite(train_mse) or train_mse > divergence_threshold
                 except (ValueError, FloatingPointError, ArithmeticError):
-                    train_mse, test_mse, diverged = float('nan'), float('nan'), True
+                    train_mse, test_mse, diverged = float("nan"), float("nan"), True
 
-                status = 'diverged' if diverged else 'ok'
+                status = "diverged" if diverged else "ok"
                 log_file.write(
-                    ','.join(str(params[k]) for k in keys) + f',{train_mse},{test_mse},{status}\n'
+                    ",".join(str(params[k]) for k in keys) + f",{train_mse},{test_mse},{status}\n"
                 )
 
-                self.trials_.append({
-                    'params': params,
-                    'model': model,
-                    'train_mse': train_mse,
-                    'test_mse': test_mse,
-                    'diverged': diverged,
-                })
+                self.trials_.append(
+                    {
+                        "params": params,
+                        "model": model,
+                        "train_mse": train_mse,
+                        "test_mse": test_mse,
+                        "diverged": diverged,
+                    }
+                )
 
         return self.trials_
 
-    def best(self, metric: str = 'train_mse') -> dict:
-        valid_trials = [t for t in self.trials_ if not t['diverged']]
+    def best(self, metric: str = "train_mse") -> dict:
+        valid_trials = [t for t in self.trials_ if not t["diverged"]]
         if not valid_trials:
-            raise ValueError('No trial converged ')
+            raise ValueError("No trial converged ")
         return min(valid_trials, key=lambda t: t[metric])
 
 
@@ -206,33 +222,41 @@ class RegressionPlotter:
 
     def _save(self, fig, filename: str) -> str:
         path = os.path.join(self.output_dir, filename)
-        fig.savefig(path, bbox_inches='tight')
+        fig.savefig(path, bbox_inches="tight")
         plt.close(fig)
         return path
 
     def plot_cost_history(self, cost_history: list, title: str, filename: str) -> str:
         fig, ax = plt.subplots()
         ax.plot(cost_history)
-        ax.set_xlabel('Iteration')
-        ax.set_ylabel('MSE Cost')
+        ax.set_xlabel("Iteration")
+        ax.set_ylabel("MSE Cost")
         ax.set_title(title)
         return self._save(fig, filename)
 
-    def plot_predicted_vs_actual(self, y_true: np.ndarray, y_pred: np.ndarray,
-                                  title: str, filename: str) -> str:
+    def plot_predicted_vs_actual(
+        self, y_true: np.ndarray, y_pred: np.ndarray, title: str, filename: str
+    ) -> str:
         fig, ax = plt.subplots()
         ax.scatter(y_true, y_pred, alpha=0.4)
         lims = [min(y_true.min(), y_pred.min()), max(y_true.max(), y_pred.max())]
-        ax.plot(lims, lims, 'r--', label='Perfect prediction')
-        ax.set_xlabel('Actual Obesity Level')
-        ax.set_ylabel('Predicted Obesity Level')
+        ax.plot(lims, lims, "r--", label="Perfect prediction")
+        ax.set_xlabel("Actual Obesity Level")
+        ax.set_ylabel("Predicted Obesity Level")
         ax.set_title(title)
         ax.legend()
         return self._save(fig, filename)
 
-    def plot_top_features_vs_target(self, X_test: pd.DataFrame, y_true: np.ndarray,
-                                     feature_names: list, weights: np.ndarray,
-                                     title: str, filename: str, n_top: int = 6) -> str:
+    def plot_top_features_vs_target(
+        self,
+        X_test: pd.DataFrame,
+        y_true: np.ndarray,
+        feature_names: list,
+        weights: np.ndarray,
+        title: str,
+        filename: str,
+        n_top: int = 6,
+    ) -> str:
         top_idx = np.argsort(np.abs(weights))[::-1][:n_top]
         top_features = [feature_names[i] for i in top_idx]
 
@@ -244,28 +268,29 @@ class RegressionPlotter:
         for ax, feature in zip(axes, top_features):
             ax.scatter(X_test[feature].to_numpy(), y_true, alpha=0.4)
             ax.set_xlabel(feature)
-            ax.set_ylabel('Obesity Level')
-            ax.set_title(f'weight = {weights[feature_names.index(feature)]:.3f}')
+            ax.set_ylabel("Obesity Level")
+            ax.set_title(f"weight = {weights[feature_names.index(feature)]:.3f}")
 
-        for ax in axes[len(top_features):]:
-            ax.axis('off')
+        for ax in axes[len(top_features) :]:
+            ax.axis("off")
 
         fig.suptitle(title)
         fig.tight_layout()
         return self._save(fig, filename)
 
-    def plot_weight_coefficients(self, feature_names: list, weights: np.ndarray,
-                                  title: str, filename: str) -> str:
+    def plot_weight_coefficients(
+        self, feature_names: list, weights: np.ndarray, title: str, filename: str
+    ) -> str:
         order = np.argsort(np.abs(weights))
         fig, ax = plt.subplots(figsize=(6, max(3, 0.4 * len(feature_names))))
         ax.barh([feature_names[i] for i in order], weights[order])
-        ax.set_xlabel('Weight Coefficient')
+        ax.set_xlabel("Weight Coefficient")
         ax.set_title(title)
         return self._save(fig, filename)
 
 
 def main():
-    warnings.filterwarnings('ignore', category=RuntimeWarning)
+    warnings.filterwarnings("ignore", category=RuntimeWarning)
 
     X_raw, y_raw = ObesityDataLoader().load()
 
@@ -277,42 +302,51 @@ def main():
     y_train_np, y_test_np = y_train.to_numpy(), y_test.to_numpy()
 
     param_grid = {
-        'learning_rate_init': [0.0001, 0.0005, 0.001, 0.002, 0.005, 0.01, 0.02, 0.05, 0.1],
+        "learning_rate_init": [0.0001, 0.0005, 0.001, 0.002, 0.005, 0.01, 0.02, 0.05, 0.1],
     }
-    tuner = GridSearchLogger(model_factory=SklearnLinearRegressionModel, log_path='logs/part2_log.csv')
+    tuner = GridSearchLogger(
+        model_factory=SklearnLinearRegressionModel, log_path="logs/part2_log.csv"
+    )
     tuner.run(param_grid, X_train_np, y_train_np, X_test_np, y_test_np)
     best_trial = tuner.best()
-    model = best_trial['model']
+    model = best_trial["model"]
 
-    print(f'Part 2 best hyperparameters: {best_trial["params"]}')
+    print(f"Part 2 best hyperparameters: {best_trial['params']}")
 
     train_metrics = RegressionEvaluator.evaluate(y_train_np, model.predict(X_train_np))
     test_metrics = RegressionEvaluator.evaluate(y_test_np, model.predict(X_test_np))
-    print(f'Train metrics: {train_metrics}')
-    print(f'Test metrics:  {test_metrics}')
-    print(f'Bias: {model.bias_:.4f}')
+    print(f"Train metrics: {train_metrics}")
+    print(f"Test metrics:  {test_metrics}")
+    print(f"Bias: {model.bias_:.4f}")
     for name, weight in zip(preprocessor.feature_names_, model.weights_):
-        print(f'  {name}: {weight:.4f}')
+        print(f"  {name}: {weight:.4f}")
 
-    plotter = RegressionPlotter(output_dir='plots/part2')
+    plotter = RegressionPlotter(output_dir="plots/part2")
     plotter.plot_cost_history(
-        model.cost_history_, 'Part 2: MSE vs Iterations', 'mse_vs_iterations.png'
+        model.cost_history_, "Part 2: MSE vs Iterations", "mse_vs_iterations.png"
     )
     plotter.plot_predicted_vs_actual(
-        y_test_np, model.predict(X_test_np),
-        'Part 2: Predicted vs Actual Obesity Level (Test Set)', 'predicted_vs_actual.png'
+        y_test_np,
+        model.predict(X_test_np),
+        "Part 2: Predicted vs Actual Obesity Level (Test Set)",
+        "predicted_vs_actual.png",
     )
     plotter.plot_weight_coefficients(
-        preprocessor.feature_names_, model.weights_,
-        'Part 2: Learned Weight Coefficients', 'weight_coefficients.png'
+        preprocessor.feature_names_,
+        model.weights_,
+        "Part 2: Learned Weight Coefficients",
+        "weight_coefficients.png",
     )
 
     plotter.plot_top_features_vs_target(
-        X_test, y_test_np, preprocessor.feature_names_, model.weights_,
-        'Part 2: Obesity Level vs Top 6 Features (by |weight|)', 'top_features_vs_target.png'
+        X_test,
+        y_test_np,
+        preprocessor.feature_names_,
+        model.weights_,
+        "Part 2: Obesity Level vs Top 6 Features (by |weight|)",
+        "top_features_vs_target.png",
     )
 
 
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
