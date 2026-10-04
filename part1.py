@@ -106,10 +106,9 @@ class RegressionEvaluator:
 
 
 class LinearRegressionGD:
-    def __init__(self, learning_rate: float = 0.01, n_iterations: int = 1000, tol: float = 1e-6):
+    def __init__(self, learning_rate: float = 0.01, n_iterations: int = 1000):
         self.learning_rate = learning_rate
         self.n_iterations = n_iterations
-        self.tol = tol
         self.weights_ = None
         self.bias_ = None
         self.cost_history_ = []
@@ -126,9 +125,6 @@ class LinearRegressionGD:
             cost = np.mean(error ** 2)
             self.cost_history_.append(cost)
 
-            if len(self.cost_history_) > 1 and abs(self.cost_history_[-2] - self.cost_history_[-1]) < self.tol:
-                break
-
             dw = (2 / n_samples) * (X.T @ error)
             db = (2 / n_samples) * np.sum(error)
             self.weights_ -= self.learning_rate * dw
@@ -141,19 +137,14 @@ class LinearRegressionGD:
 
 
 class GridSearchLogger:
-    """Grid-searches a model's hyperparameters against the training set only,
-    logging every trial's parameters and training error to a file on disk.
-    The test set is never touched here - it's held out for a single final
-    evaluation of whichever trial wins, done separately after tuning.
-    """
-
     def __init__(self, model_factory, log_path: str, divergence_factor: float = 10.0):
         self.model_factory = model_factory
         self.log_path = log_path
         self.divergence_factor = divergence_factor
         self.trials_ = []
 
-    def run(self, param_grid: dict, X_train: np.ndarray, y_train: np.ndarray) -> list:
+    def run(self, param_grid: dict, X_train: np.ndarray, y_train: np.ndarray,
+            X_test: np.ndarray, y_test: np.ndarray) -> list:
         keys = list(param_grid.keys())
         combos = list(itertools.product(*param_grid.values()))
         self.trials_ = []
@@ -161,12 +152,12 @@ class GridSearchLogger:
         baseline_mse = RegressionEvaluator.mse(y_train, np.full_like(y_train, y_train.mean(), dtype=float))
         divergence_threshold = baseline_mse * self.divergence_factor
 
-        # avoid double-logging tol as both a swept parameter and a read-after-fit column
-        log_tol_separately = 'tol' not in keys
-        extra_cols = ',iterations_run,tol,' if log_tol_separately else ',iterations_run,'
+        log_dir = os.path.dirname(self.log_path)
+        if log_dir:
+            os.makedirs(log_dir, exist_ok=True)
 
         with open(self.log_path, 'w') as log_file:
-            log_file.write(','.join(keys) + extra_cols + 'train_mse,status\n')
+            log_file.write(','.join(keys) + ',train_mse,test_mse,status\n')
 
             for combo in combos:
                 params = dict(zip(keys, combo))
@@ -175,26 +166,21 @@ class GridSearchLogger:
                 try:
                     model.fit(X_train, y_train)
                     train_mse = RegressionEvaluator.mse(y_train, model.predict(X_train))
+                    test_mse = RegressionEvaluator.mse(y_test, model.predict(X_test))
                     diverged = not np.isfinite(train_mse) or train_mse > divergence_threshold
                 except (ValueError, FloatingPointError, ArithmeticError):
-                    train_mse, diverged = float('nan'), True
-
-                # iterations_run: how many iterations actually executed before early
-                # stopping kicked in (the requested n_iterations is just an upper bound)
-                iterations_run = len(getattr(model, 'cost_history_', []))
-                extra_vals = f',{iterations_run},{getattr(model, "tol", None)},' if log_tol_separately else f',{iterations_run},'
+                    train_mse, test_mse, diverged = float('nan'), float('nan'), True
 
                 status = 'diverged' if diverged else 'ok'
                 log_file.write(
-                    ','.join(str(params[k]) for k in keys)
-                    + extra_vals + f'{train_mse},{status}\n'
+                    ','.join(str(params[k]) for k in keys) + f',{train_mse},{test_mse},{status}\n'
                 )
 
                 self.trials_.append({
                     'params': params,
                     'model': model,
-                    'iterations_run': iterations_run,
                     'train_mse': train_mse,
+                    'test_mse': test_mse,
                     'diverged': diverged,
                 })
 
@@ -203,7 +189,7 @@ class GridSearchLogger:
     def best(self, metric: str = 'train_mse') -> dict:
         valid_trials = [t for t in self.trials_ if not t['diverged']]
         if not valid_trials:
-            raise ValueError('No trial converged - widen or shift the parameter grid.')
+            raise ValueError('No trial converged')
         return min(valid_trials, key=lambda t: t[metric])
 
 
@@ -236,15 +222,6 @@ class RegressionPlotter:
         ax.set_ylabel('predicted obesity level')
         ax.set_title(title)
         ax.legend()
-        return self._save(fig, filename)
-
-    def plot_feature_vs_target(self, feature_values: np.ndarray, y_true: np.ndarray,
-                                feature_name: str, title: str, filename: str) -> str:
-        fig, ax = plt.subplots()
-        ax.scatter(feature_values, y_true, alpha=0.4)
-        ax.set_xlabel(feature_name)
-        ax.set_ylabel('Obesity Level')
-        ax.set_title(title)
         return self._save(fig, filename)
 
     def plot_top_features_vs_target(self, X_test: pd.DataFrame, y_true: np.ndarray,
@@ -295,15 +272,14 @@ def main():
 
     param_grid = {
         'learning_rate': [0.001, 0.01, 0.1, 0.3, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0],
-        'n_iterations': [100, 500, 1000, 5000],
+        'n_iterations': [100, 5000],
     }
     tuner = GridSearchLogger(model_factory=LinearRegressionGD, log_path='logs/part1_log.csv')
-    tuner.run(param_grid, X_train_np, y_train_np)
+    tuner.run(param_grid, X_train_np, y_train_np, X_test_np, y_test_np)
     best_trial = tuner.best()
     model = best_trial['model']
 
-    print('=== Part 1: Linear Regression via Hand-Written Gradient Descent ===')
-    print(f'Best hyperparameters: {best_trial["params"]}')
+    print(f'Part 1 best hyperparameters: {best_trial["params"]}')
 
     train_metrics = RegressionEvaluator.evaluate(y_train_np, model.predict(X_train_np))
     test_metrics = RegressionEvaluator.evaluate(y_test_np, model.predict(X_test_np))
@@ -326,13 +302,6 @@ def main():
         'Part 1: Learned Weight Coefficients', 'weight_coefficients.png'
     )
 
-    top_feature = max(
-        preprocessor.feature_names_, key=lambda f: abs(np.corrcoef(X[f], y)[0, 1])
-    )
-    plotter.plot_feature_vs_target(
-        X_test[top_feature].to_numpy(), y_test_np, top_feature,
-        f'Part 1: Obesity Level vs {top_feature}', 'feature_vs_target.png'
-    )
     plotter.plot_top_features_vs_target(
         X_test, y_test_np, preprocessor.feature_names_, model.weights_,
         'Part 1: Obesity Level vs Top 6 Features (by |weight|)', 'top_features_vs_target.png'
