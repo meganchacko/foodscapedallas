@@ -8,7 +8,3 @@ line-length = 100
 # B: bugbear (common Python pitfalls)
 # UP: pyupgrade (modern syntax for the target Python version)
 select = ["E", "F", "I", "B", "UP"]
-
-[tool.ruff.lint.per-file-ignores]
-# zip(strict=...) needs Python 3.10+, and the legacy scripts still run on the 3.9 venv
-"ml/part*.py" = ["B905"]

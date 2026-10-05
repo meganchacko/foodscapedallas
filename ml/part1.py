@@ -172,7 +172,7 @@ class GridSearchLogger:
             log_file.write(",".join(keys) + ",train_mse,test_mse,status\n")
 
             for combo in combos:
-                params = dict(zip(keys, combo))
+                params = dict(zip(keys, combo, strict=True))
                 model = self.model_factory(**params)
 
                 try:
@@ -257,7 +257,7 @@ class RegressionPlotter:
         fig, axes = plt.subplots(nrows, ncols, figsize=(5 * ncols, 4 * nrows))
         axes = np.atleast_1d(axes).flatten()
 
-        for ax, feature in zip(axes, top_features):
+        for ax, feature in zip(axes, top_features, strict=False):
             ax.scatter(X_test[feature].to_numpy(), y_true, alpha=0.4)
             ax.set_xlabel(feature)
             ax.set_ylabel("Obesity Level")
@@ -309,7 +309,7 @@ def main():
     print(f"Train metrics: {train_metrics}")
     print(f"Test metrics:  {test_metrics}")
     print(f"Bias: {model.bias_:.4f}")
-    for name, weight in zip(preprocessor.feature_names_, model.weights_):
+    for name, weight in zip(preprocessor.feature_names_, model.weights_, strict=True):
         print(f"  {name}: {weight:.4f}")
 
     plotter = RegressionPlotter(output_dir="plots/part1")
