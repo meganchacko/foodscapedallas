@@ -1,0 +1,52 @@
+# Local development stack. Start everything with: docker compose up
+name: foodscape
+services:
+  db:
+    image: postgis/postgis:16-3.5
+    # the official PostGIS image is only built for Intel (amd64); Apple Silicon runs it emulated
+    platform: linux/amd64
+    env_file: .env # the image reads POSTGRES_USER/PASSWORD/DB to create the user and database
+    ports:
+      - "5432:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data # named volume, so data survives container restarts
+    healthcheck:
+      # $$ escapes $ so the variable is expanded inside the container, not by compose
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  backend:
+    build: ./backend
+    # --reload restarts the server when a file in the mounted app/ folder changes
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    env_file: .env
+    environment:
+      # inside the compose network, services reach each other by service name
+      POSTGRES_HOST: db
+      POSTGRES_PORT: 5432
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend/app:/app/app
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+volumes:
+  db-data:
