@@ -1,6 +1,8 @@
 [tool.ruff]
 target-version = "py312"
 line-length = 100
+# where our own packages live, so `app` imports sort as first-party
+src = [".", "backend"]
 
 [tool.ruff.lint]
 # E/F: pycodestyle errors + pyflakes (real bugs like unused imports, undefined names)
@@ -8,3 +10,8 @@ line-length = 100
 # B: bugbear (common Python pitfalls)
 # UP: pyupgrade (modern syntax for the target Python version)
 select = ["E", "F", "I", "B", "UP"]
+
+[tool.pytest.ini_options]
+# run pytest from the repo root: tests live in backend/tests and import the `app` package from backend/
+testpaths = ["backend/tests"]
+pythonpath = ["backend"]
