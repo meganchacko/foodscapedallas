@@ -1,0 +1,25 @@
+.app {
+  max-width: 480px;
+  margin: 64px auto;
+  padding: 0 16px;
+}
+
+.status-list {
+  list-style: none;
+  padding: 0;
+}
+
+.status-list li {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.ok {
+  color: #15803d;
+}
+
+.error {
+  color: #b91c1c;
+}
