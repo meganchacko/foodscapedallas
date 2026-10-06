@@ -10,11 +10,14 @@ import logging
 import time
 
 from pipeline.db import create_db_engine
+from pipeline.loaders import tracts
 
 logger = logging.getLogger("pipeline")
 
 # (name, load function) in the order they must run: later steps need earlier ones' rows
-STEPS = []
+STEPS = [
+    ("tracts", tracts.load),
+]
 
 
 def main() -> None:
