@@ -10,7 +10,7 @@ import logging
 import time
 
 from pipeline.db import create_db_engine
-from pipeline.loaders import tracts, usda_2019, usda_2025
+from pipeline.loaders import cdc_places, tracts, usda_2019, usda_2025
 
 logger = logging.getLogger("pipeline")
 
@@ -19,6 +19,7 @@ STEPS = [
     ("tracts", tracts.load),
     ("usda_2019", usda_2019.load),
     ("usda_2025", usda_2025.load),
+    ("cdc_places", cdc_places.load),
 ]
 
 
