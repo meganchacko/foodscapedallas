@@ -16,6 +16,7 @@ select = ["E", "F", "I", "B", "UP"]
 known-third-party = ["alembic"]
 
 [tool.pytest.ini_options]
-# run pytest from the repo root: tests live in backend/tests and import the `app` package from backend/
-testpaths = ["backend/tests"]
-pythonpath = ["backend"]
+# run pytest from the repo root. backend/ is on the path so tests can `import app`;
+# the repo root is on it so they can `import pipeline`.
+testpaths = ["backend/tests", "pipeline/tests"]
+pythonpath = ["backend", "."]
