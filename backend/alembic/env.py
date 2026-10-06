@@ -7,6 +7,7 @@ from alembic import context
 from geoalchemy2 import alembic_helpers
 from sqlalchemy import create_engine
 
+import app.db.models  # noqa: F401  (importing the models registers their tables on Base.metadata)
 from app.config import get_settings
 from app.db.base import Base
 
