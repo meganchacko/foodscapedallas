@@ -1,0 +1,36 @@
+"""Load all Dallas County data into the database, in order.
+
+Run from the repo root:  python -m pipeline.run_all
+
+Every loader is idempotent (it upserts on a stable key), so running this again updates
+existing rows instead of creating duplicates.
+"""
+
+import logging
+import time
+
+from pipeline.db import create_db_engine
+
+logger = logging.getLogger("pipeline")
+
+# (name, load function) in the order they must run: later steps need earlier ones' rows
+STEPS = []
+
+
+def main() -> None:
+    logging.basicConfig(
+        level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s"
+    )
+    engine = create_db_engine()
+
+    for name, load in STEPS:
+        started = time.perf_counter()
+        row_count = load(engine)
+        elapsed = time.perf_counter() - started
+        logger.info("%s: %d rows (%.1fs)", name, row_count, elapsed)
+
+    engine.dispose()
+
+
+if __name__ == "__main__":
+    main()
