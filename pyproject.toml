@@ -11,6 +11,10 @@ src = [".", "backend"]
 # UP: pyupgrade (modern syntax for the target Python version)
 select = ["E", "F", "I", "B", "UP"]
 
+[tool.ruff.lint.isort]
+# backend/alembic/ (our migrations folder) would otherwise make ruff think the alembic library is ours
+known-third-party = ["alembic"]
+
 [tool.pytest.ini_options]
 # run pytest from the repo root: tests live in backend/tests and import the `app` package from backend/
 testpaths = ["backend/tests"]
