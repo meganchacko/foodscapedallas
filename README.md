@@ -49,6 +49,16 @@ ruff check . && ruff format --check .
 
 Frontend: see `frontend/README.md`.
 
+### Database migrations
+
+The schema is managed with Alembic (`backend/alembic/versions/`). The backend container runs `alembic upgrade head` on startup, so `docker compose up` always has the latest schema. Tests run against a separate `foodscape_test` database that they create and drop themselves.
+
+```bash
+alembic -c backend/alembic.ini upgrade head                       # apply migrations to the dev database
+alembic -c backend/alembic.ini revision --autogenerate -m "..."   # draft a migration after changing app/db/models.py
+alembic -c backend/alembic.ini check                              # confirm the models and migrations match
+```
+
 `.env` holds local settings and secrets and is never committed. Keep `.env.example` up to date when adding settings.
 
 ## Running the original model

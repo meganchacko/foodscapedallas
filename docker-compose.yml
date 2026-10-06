@@ -29,8 +29,9 @@ services:
 
   backend:
     build: ./backend
-    # --reload restarts the server when a file in the mounted app/ folder changes
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    # Apply any pending migrations, then start the server.
+    # --reload restarts the server when a file in the mounted app/ folder changes.
+    command: sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
     env_file: .env
     environment:
       # inside the compose network, services reach each other by service name
@@ -42,6 +43,7 @@ services:
       - "8000:8000"
     volumes:
       - ./backend/app:/app/app
+      - ./backend/alembic:/app/alembic
     depends_on:
       db:
         condition: service_healthy
