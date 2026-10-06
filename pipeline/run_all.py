@@ -10,13 +10,22 @@ import logging
 import time
 
 from pipeline.db import create_db_engine
-from pipeline.loaders import cdc_places, osm_places, pantries, tracts, usda_2019, usda_2025
+from pipeline.loaders import (
+    cdc_places,
+    census_blocks,
+    osm_places,
+    pantries,
+    tracts,
+    usda_2019,
+    usda_2025,
+)
 
 logger = logging.getLogger("pipeline")
 
 # (name, load function) in the order they must run: later steps need earlier ones' rows
 STEPS = [
     ("tracts", tracts.load),
+    ("census_blocks", census_blocks.load),
     ("usda_2019", usda_2019.load),
     ("usda_2025", usda_2025.load),
     ("cdc_places", cdc_places.load),
