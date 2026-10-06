@@ -6,6 +6,7 @@ from geoalchemy2 import Geometry, WKBElement
 from sqlalchemy import (
     CheckConstraint,
     DateTime,
+    ForeignKey,
     Index,
     Numeric,
     String,
@@ -26,10 +27,11 @@ SRID = 4326
 
 
 class Tract(Base):
-    """A census tract in Dallas County, with the stats shown on the map.
+    """A 2020 census tract in Dallas County, with the stats shown on the map.
 
     Data columns are nullable because the pipeline loads tract shapes first and fills in
-    USDA and CDC numbers afterwards; null means "not known", not zero.
+    population and CDC numbers afterwards; null means "not known", not zero.
+    Food access flags live in TractFoodAccess, one row per definition.
     """
 
     __tablename__ = "tracts"
@@ -42,16 +44,32 @@ class Tract(Base):
     )
     population: Mapped[int | None]
 
-    # USDA Food Access Research Atlas flags, using the standard 1-mile (urban) / 10-mile (rural)
-    # low-access definition
+    # CDC PLACES: estimated % of adults with obesity
+    obesity_pct: Mapped[Decimal | None] = mapped_column(Numeric(4, 1))
+    median_income: Mapped[int | None]
+
+
+class TractFoodAccess(Base):
+    """USDA food access flags for one tract under one definition ("measure").
+
+    A tract has one row per measure, so the map can switch between definitions:
+      - "usda_2019_supermarkets": 2019 Food Access Research Atlas, which counts supermarkets and
+        large grocery stores. Published on 2010 tracts; the pipeline translates it to 2020 tracts.
+      - "usda_2025_snap_retailers": 2025 Atlas, which counts any SNAP-authorized store.
+    Both use the standard low-access definition: over 1 mile (urban) or 10 miles (rural) from a
+    store, measured in a straight line.
+    """
+
+    __tablename__ = "tract_food_access"
+
+    geoid: Mapped[str] = mapped_column(
+        String(11), ForeignKey("tracts.geoid", ondelete="CASCADE"), primary_key=True
+    )
+    measure: Mapped[str] = mapped_column(String(50), primary_key=True)
     low_income: Mapped[bool | None]
     low_access: Mapped[bool | None]
     low_income_low_access: Mapped[bool | None]
     low_access_population: Mapped[int | None]
-
-    # CDC PLACES: estimated % of adults with obesity
-    obesity_pct: Mapped[Decimal | None] = mapped_column(Numeric(4, 1))
-    median_income: Mapped[int | None]
 
 
 class CensusBlock(Base):

@@ -3,7 +3,7 @@ from alembic import command
 from sqlalchemy import inspect, text
 from sqlalchemy.exc import IntegrityError
 
-EXPECTED_TABLES = {"tracts", "census_blocks", "places", "health_checks"}
+EXPECTED_TABLES = {"tracts", "tract_food_access", "census_blocks", "places", "health_checks"}
 
 # A valid point in downtown Dallas, for inserts
 DALLAS_POINT = "ST_GeomFromText('POINT(-96.797 32.776)', 4326)"
