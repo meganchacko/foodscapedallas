@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.gzip import GZipMiddleware
 
-from app.api import health, places, tracts
+from app.api import geocode, health, places, tracts
 
 app = FastAPI(title="FoodScape Dallas API")
 
@@ -12,3 +12,4 @@ app.add_middleware(GZipMiddleware, minimum_size=1000)
 app.include_router(health.router)
 app.include_router(tracts.router)
 app.include_router(places.router)
+app.include_router(geocode.router)
