@@ -42,6 +42,12 @@ class Tract(Base):
     geom: Mapped[WKBElement] = mapped_column(
         Geometry("MULTIPOLYGON", srid=SRID, spatial_index=False)
     )
+    # A lighter copy of geom for drawing the map (borders moved by at most ~20 m). The pipeline
+    # simplifies all tracts together, so neighbors keep sharing edges with no gaps or overlaps.
+    # Spatial queries use the full-detail geom.
+    geom_simplified: Mapped[WKBElement | None] = mapped_column(
+        Geometry("MULTIPOLYGON", srid=SRID, spatial_index=False)
+    )
     population: Mapped[int | None]
 
     # CDC PLACES: estimated % of adults with obesity

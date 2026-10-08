@@ -35,6 +35,7 @@ def test_geometry_columns_use_srid_4326(test_engine):
 
     assert set(rows) == {
         ("tracts", "geom", 4326, "MULTIPOLYGON"),
+        ("tracts", "geom_simplified", 4326, "MULTIPOLYGON"),
         ("census_blocks", "center", 4326, "POINT"),
         ("places", "geom", 4326, "POINT"),
     }
