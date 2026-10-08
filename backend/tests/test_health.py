@@ -1,7 +1,6 @@
-from redis import Redis
 from sqlalchemy import create_engine
 
-from app.cache import get_redis
+from app.cache import create_redis, get_redis
 from app.db.database import get_engine
 from app.main import app
 
@@ -29,9 +28,7 @@ def test_health_reports_db_down(client):
 
 
 def test_health_reports_cache_down(client):
-    app.dependency_overrides[get_redis] = lambda: Redis(
-        host="localhost", port=UNREACHABLE_PORT, socket_connect_timeout=1
-    )
+    app.dependency_overrides[get_redis] = lambda: create_redis("localhost", UNREACHABLE_PORT)
 
     response = client.get("/health")
 

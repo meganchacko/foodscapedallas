@@ -9,6 +9,7 @@ existing rows instead of creating duplicates.
 import logging
 import time
 
+from pipeline.cache import clear_map_cache, create_redis
 from pipeline.db import create_db_engine
 from pipeline.loaders import (
     cdc_places,
@@ -47,6 +48,10 @@ def main() -> None:
         logger.info("%s: %d rows (%.1fs)", name, row_count, elapsed)
 
     engine.dispose()
+
+    # The API caches map data in Redis; clear it so the next request shows the new data
+    cleared = clear_map_cache(create_redis())
+    logger.info("Cleared %d cached map responses", cleared)
 
 
 if __name__ == "__main__":

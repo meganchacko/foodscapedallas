@@ -18,6 +18,10 @@ class PipelineSettings(BaseSettings):
     postgres_host: str = "localhost"
     postgres_port: int = 5432
 
+    # Redis, so the pipeline can clear the API's cached map data after loading
+    redis_host: str = "localhost"
+    redis_port: int = 6379
+
     # Free key from https://api.census.gov/data/key_signup.html (needed for block population)
     census_api_key: str | None = None
 

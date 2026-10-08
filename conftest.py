@@ -6,8 +6,10 @@ from pathlib import Path
 import pytest
 from alembic import command
 from alembic.config import Config
+from redis import Redis
 from sqlalchemy import Engine, create_engine, make_url, text
 
+from app.cache import create_redis
 from app.config import get_settings
 
 BACKEND_DIR = Path(__file__).resolve().parent / "backend"
@@ -64,3 +66,19 @@ def clean_engine(test_engine: Engine) -> Iterator[Engine]:
         connection.execute(
             text("TRUNCATE tracts, tract_food_access, census_blocks, places, health_checks CASCADE")
         )
+
+
+# Redis has numbered databases (0-15). The app uses 0; tests use 1, so flushing it in tests
+# never touches the dev cache.
+TEST_REDIS_DB = 1
+
+
+@pytest.fixture
+def test_redis() -> Iterator[Redis]:
+    """An empty Redis database for one test."""
+    settings = get_settings()
+    cache = create_redis(settings.redis_host, settings.redis_port, db=TEST_REDIS_DB)
+    cache.flushdb()
+    yield cache
+    cache.flushdb()
+    cache.close()

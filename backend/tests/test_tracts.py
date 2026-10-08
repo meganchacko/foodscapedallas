@@ -1,8 +1,12 @@
 import pytest
-from sqlalchemy import text
+from sqlalchemy import create_engine, text
 
+from app.cache import create_redis, get_redis
 from app.db.database import get_engine
 from app.main import app
+
+# Nothing listens on port 1, so connecting fails right away: a real "service is down"
+UNREACHABLE_PORT = 1
 
 # Two side-by-side squares in downtown Dallas, standing in for tracts
 WEST_TRACT = (
@@ -14,8 +18,8 @@ EAST_TRACT = (
 
 
 @pytest.fixture
-def seeded_client(client, clean_engine):
-    """A client whose API reads a test database holding two tracts and one grocery store."""
+def seeded_client(client, clean_engine, test_redis):
+    """A client whose API uses the test database (two tracts, one grocery store) and test Redis."""
     with clean_engine.begin() as connection:
         connection.execute(
             text(
@@ -43,6 +47,7 @@ def seeded_client(client, clean_engine):
             )
         )
     app.dependency_overrides[get_engine] = lambda: clean_engine
+    app.dependency_overrides[get_redis] = lambda: test_redis
     return client
 
 
@@ -79,11 +84,11 @@ def test_tract_without_food_access_data_has_an_empty_object(seeded_client):
 
 
 def test_priority_area_follows_the_selected_food_access_definition(seeded_client):
-    body = seeded_client.get("/tracts").json()
-    west = features_by_geoid(seeded_client.get("/tracts"))["48113000001"]["properties"]
+    response = seeded_client.get("/tracts")
+    west = features_by_geoid(response)["48113000001"]["properties"]
 
     # median of 40 and 30 is 35; the west tract (40%) is above it
-    assert body["obesity_median_pct"] == 35.0
+    assert response.json()["obesity_median_pct"] == 35.0
     assert west["food_access"]["usda_2019_supermarkets"]["priority_area"] is True  # low access
     assert west["food_access"]["usda_2025_snap_retailers"]["priority_area"] is False
 
@@ -97,3 +102,26 @@ def test_nearest_grocery_distance_is_in_meters(seeded_client):
     # roughly one tract-width (~1.9 km at this latitude) from the east tract's
     assert west_distance < 500
     assert 1500 < east_distance < 2500
+
+
+def test_second_request_is_served_from_the_cache(seeded_client):
+    first = seeded_client.get("/tracts")
+    # Point the API at a database that's down: only a cached copy can answer now
+    app.dependency_overrides[get_engine] = lambda: create_engine(
+        f"postgresql+psycopg://user:pass@localhost:{UNREACHABLE_PORT}/none",
+        connect_args={"connect_timeout": 1},
+    )
+
+    second = seeded_client.get("/tracts")
+
+    assert second.status_code == 200
+    assert second.json() == first.json()
+
+
+def test_tracts_still_work_when_redis_is_down(seeded_client):
+    app.dependency_overrides[get_redis] = lambda: create_redis("localhost", UNREACHABLE_PORT)
+
+    response = seeded_client.get("/tracts")
+
+    assert response.status_code == 200
+    assert len(response.json()["features"]) == 2
