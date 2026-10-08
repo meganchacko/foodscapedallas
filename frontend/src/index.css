@@ -7,6 +7,9 @@
   --text-secondary: #52514e;
   --text-muted: #898781;
   --border: #e1e0d9;
+  --border-strong: #c3c2b7;
+  --hover: #f0efec;
+  --link: #1c5cab;
   --critical: #d03b3b;
 
   font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;

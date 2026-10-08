@@ -43,3 +43,34 @@ export type PlaceCollection = FeatureCollection<Point, PlaceProperties>
 
 // Which data the tract colors show
 export type TractLayerKind = 'food_access' | 'obesity'
+
+// GET /geocode
+export type GeocodeResult = {
+  lat: number
+  lng: number
+  display_name: string
+}
+
+// GET /places/nearby
+export type NearbyPlace = PlaceProperties & {
+  lat: number
+  lng: number
+  distance_m: number
+}
+
+export type SearchLocation = {
+  lat: number
+  lng: number
+  in_dallas_county: boolean
+  tract_geoid: string | null
+  low_access: boolean | null
+}
+
+export type NearbyResponse = {
+  location: SearchLocation
+  radius_miles: number
+  places: NearbyPlace[]
+}
+
+// Which tab the app shows
+export type View = 'explore' | 'nearby'

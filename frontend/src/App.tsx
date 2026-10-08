@@ -1,22 +1,29 @@
 import { useEffect, useMemo, useState } from 'react'
-import { fetchPlaces, fetchTracts } from './api'
 import { Pane } from 'react-leaflet'
+import { fetchPlaces, fetchTracts } from './api'
 import { Controls } from './components/Controls'
 import { Legend } from './components/Legend'
 import { MapView } from './components/MapView'
+import { NearbyLayer } from './components/NearbyLayer'
+import { NearbyPanel } from './components/NearbyPanel'
 import { PlaceLayer } from './components/PlaceLayer'
 import { TractLayer } from './components/TractLayer'
 import { TractPanel } from './components/TractPanel'
+import { ViewTabs } from './components/ViewTabs'
 import type {
   Measure,
   PlaceCollection,
   PlaceType,
   TractCollection,
   TractLayerKind,
+  View,
 } from './types'
+import { useNearbySearch } from './useNearbySearch'
 import './App.css'
 
 function App() {
+  const [view, setView] = useState<View>('explore')
+  const nearbySearch = useNearbySearch()
   const [tracts, setTracts] = useState<TractCollection | null>(null)
   const [loadError, setLoadError] = useState(false)
   const [layerKind, setLayerKind] = useState<TractLayerKind>('food_access')
@@ -67,41 +74,48 @@ function App() {
       <aside className="sidebar">
         <header>
           <h1>FoodScape Dallas</h1>
-          <p className="subtitle">Food access and health across Dallas County census tracts</p>
+          <p className="subtitle">Food access and health across Dallas County</p>
         </header>
-        <Controls
-          layerKind={layerKind}
-          onLayerKindChange={setLayerKind}
-          measure={measure}
-          onMeasureChange={setMeasure}
-          visiblePlaceTypes={visiblePlaceTypes}
-          onTogglePlaceType={togglePlaceType}
-          placeCounts={placeCounts}
-          showPriority={showPriority}
-          onShowPriorityChange={setShowPriority}
-          priorityCount={priorityCount}
-        />
-        <Legend
-          layerKind={layerKind}
-          measure={measure}
-          showPriority={showPriority}
-          obesityMedian={tracts?.obesity_median_pct ?? null}
-        />
-        {selectedTract ? (
-          <TractPanel
-            tract={selectedTract}
-            measure={measure}
-            onClose={() => setSelectedGeoid(null)}
-          />
+        <ViewTabs view={view} onChange={setView} />
+        {view === 'nearby' ? (
+          <NearbyPanel search={nearbySearch} />
         ) : (
-          tracts && <p className="hint">Click a tract to see its details.</p>
+          <>
+            <Controls
+              layerKind={layerKind}
+              onLayerKindChange={setLayerKind}
+              measure={measure}
+              onMeasureChange={setMeasure}
+              visiblePlaceTypes={visiblePlaceTypes}
+              onTogglePlaceType={togglePlaceType}
+              placeCounts={placeCounts}
+              showPriority={showPriority}
+              onShowPriorityChange={setShowPriority}
+              priorityCount={priorityCount}
+            />
+            <Legend
+              layerKind={layerKind}
+              measure={measure}
+              showPriority={showPriority}
+              obesityMedian={tracts?.obesity_median_pct ?? null}
+            />
+            {selectedTract ? (
+              <TractPanel
+                tract={selectedTract}
+                measure={measure}
+                onClose={() => setSelectedGeoid(null)}
+              />
+            ) : (
+              tracts && <p className="hint">Click a tract to see its details.</p>
+            )}
+            {loadError && <p className="error">Couldn't load map data. Is the API running?</p>}
+            {!tracts && !loadError && <p className="hint">Loading tracts…</p>}
+          </>
         )}
-        {loadError && <p className="error">Couldn't load map data. Is the API running?</p>}
-        {!tracts && !loadError && <p className="hint">Loading tracts…</p>}
       </aside>
       <main className="map-area">
         <MapView>
-          {tracts && (
+          {view === 'explore' && tracts && (
             <TractLayer
               tracts={tracts}
               layerKind={layerKind}
@@ -113,7 +127,10 @@ function App() {
           )}
           {/* Pins get their own pane (layer) above the tracts, so tract outlines never cover them */}
           <Pane name="places" style={{ zIndex: 450 }}>
-            {places && <PlaceLayer places={places} visibleTypes={visiblePlaceTypes} />}
+            {view === 'explore' && places && (
+              <PlaceLayer places={places} visibleTypes={visiblePlaceTypes} />
+            )}
+            {view === 'nearby' && <NearbyLayer search={nearbySearch} />}
           </Pane>
         </MapView>
       </main>

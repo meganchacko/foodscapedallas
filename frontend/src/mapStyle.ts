@@ -40,6 +40,9 @@ export const PLACE_TYPES: { type: PlaceType; label: string; color: string }[] = 
   { type: 'farmers_market', label: 'Farmers markets', color: '#1baf7a' },
 ]
 
+// "You are here" marker in the Find food near me view
+export const SEARCH_POINT_COLOR = '#2a78d6'
+
 export const PLACE_COLORS = Object.fromEntries(
   PLACE_TYPES.map(({ type, color }) => [type, color]),
 ) as Record<PlaceType, string>

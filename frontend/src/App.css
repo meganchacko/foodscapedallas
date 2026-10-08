@@ -144,6 +144,128 @@ fieldset > legend {
   font-variant-numeric: tabular-nums;
 }
 
+.tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.tab {
+  flex: 1;
+  padding: 8px 4px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: none;
+  font: inherit;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.tab.active {
+  color: var(--text-primary);
+  font-weight: 600;
+  border-bottom-color: var(--text-primary);
+}
+
+.search-form {
+  margin-bottom: 16px;
+}
+
+.search-form label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.search-row {
+  display: flex;
+  gap: 6px;
+}
+
+.search-row input {
+  flex: 1;
+  min-width: 0;
+  padding: 7px 9px;
+  font: inherit;
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+}
+
+button {
+  font: inherit;
+}
+
+.search-row button,
+select {
+  padding: 7px 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  background: var(--surface);
+  cursor: pointer;
+}
+
+.link-button {
+  margin-top: 6px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--link);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.results {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+}
+
+.result {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  padding: 10px 8px;
+  border: none;
+  border-top: 1px solid var(--border);
+  background: none;
+  text-align: left;
+  cursor: pointer;
+}
+
+.result:hover,
+.result.selected {
+  background: var(--hover);
+}
+
+.result-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+}
+
+.result-distance {
+  margin-left: auto;
+  font-weight: 400;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.result-detail {
+  padding-left: 18px;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.notice {
+  margin: 12px 0;
+  padding: 10px 12px;
+  border-left: 3px solid var(--text-primary);
+  background: var(--hover);
+}
+
 /* Phones: map on top, controls underneath */
 @media (max-width: 760px) {
   .layout {
