@@ -266,6 +266,10 @@ select {
   background: var(--hover);
 }
 
+.notice p {
+  margin: 0;
+}
+
 /* Phones: map on top, controls underneath */
 @media (max-width: 760px) {
   .layout {

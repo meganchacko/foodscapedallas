@@ -84,6 +84,7 @@ export function NearbyPanel({ search }: { search: NearbySearch }) {
       {search.point && search.response && !busy && (
         <>
           <p className="hint">Near: {search.point.label}</p>
+          <LocationNotices search={search} />
           <ResultsList
             places={search.places}
             selectedPlaceId={search.selectedPlaceId}
@@ -92,6 +93,48 @@ export function NearbyPanel({ search }: { search: NearbySearch }) {
         </>
       )}
     </section>
+  )
+}
+
+// Messages about the searched location and its results
+function LocationNotices({ search }: { search: NearbySearch }) {
+  const location = search.response!.location
+  const nextRadius = RADIUS_OPTIONS.find((miles) => miles > search.radiusMiles)
+  const filtersOn = search.snapOnly || search.visibleTypes.size < PLACE_TYPES.length
+
+  return (
+    <>
+      {!location.in_dallas_county && (
+        <p className="notice" role="status">
+          This location is outside Dallas County. FoodScape only covers Dallas County, so places
+          across the county line won't appear.
+        </p>
+      )}
+      {location.low_access && (
+        <p className="notice" role="status">
+          <strong>This area has low food access.</strong> USDA data shows many residents here live
+          more than a mile from a supermarket. Food pantries and farmers markets near you are listed
+          below too.
+        </p>
+      )}
+      {search.places.length === 0 && (
+        <div className="notice" role="status">
+          <p>
+            Nothing found within {search.radiusMiles} {search.radiusMiles === 1 ? 'mile' : 'miles'}
+            {filtersOn && ' with these filters'}.
+          </p>
+          {nextRadius && (
+            <button
+              type="button"
+              className="link-button"
+              onClick={() => search.setRadiusMiles(nextRadius)}
+            >
+              Search within {nextRadius} miles
+            </button>
+          )}
+        </div>
+      )}
+    </>
   )
 }
 
