@@ -15,7 +15,9 @@ const CARTO_ATTRIBUTION =
 
 export function MapView({ children }: { children: ReactNode }) {
   return (
-    <MapContainer center={DALLAS_CENTER} zoom={INITIAL_ZOOM} className="map">
+    // zoomSnap 0.25 allows quarter zoom levels, so fitting the county fills the screen instead
+    // of snapping down to the next whole level
+    <MapContainer center={DALLAS_CENTER} zoom={INITIAL_ZOOM} zoomSnap={0.25} className="map">
       <TileLayer url={CARTO_TILES} attribution={CARTO_ATTRIBUTION} subdomains="abcd" />
       {children}
     </MapContainer>

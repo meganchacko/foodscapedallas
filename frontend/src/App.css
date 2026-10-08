@@ -46,6 +46,24 @@ fieldset > legend {
   cursor: pointer;
 }
 
+.swatch {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.swatch.dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.count {
+  color: var(--text-muted);
+}
+
 .hint {
   margin: 6px 0 0;
   font-size: 0.85rem;

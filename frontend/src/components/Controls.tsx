@@ -1,11 +1,14 @@
-import { MEASURE_DESCRIPTIONS, MEASURE_LABELS } from '../mapStyle'
-import type { Measure, TractLayerKind } from '../types'
+import { MEASURE_DESCRIPTIONS, MEASURE_LABELS, PLACE_TYPES } from '../mapStyle'
+import type { Measure, PlaceType, TractLayerKind } from '../types'
 
 type Props = {
   layerKind: TractLayerKind
   onLayerKindChange: (kind: TractLayerKind) => void
   measure: Measure
   onMeasureChange: (measure: Measure) => void
+  visiblePlaceTypes: Set<PlaceType>
+  onTogglePlaceType: (type: PlaceType) => void
+  placeCounts: Record<PlaceType, number>
 }
 
 const LAYER_LABELS: Record<TractLayerKind, string> = {
@@ -13,7 +16,15 @@ const LAYER_LABELS: Record<TractLayerKind, string> = {
   obesity: 'Adult obesity rate',
 }
 
-export function Controls({ layerKind, onLayerKindChange, measure, onMeasureChange }: Props) {
+export function Controls({
+  layerKind,
+  onLayerKindChange,
+  measure,
+  onMeasureChange,
+  visiblePlaceTypes,
+  onTogglePlaceType,
+  placeCounts,
+}: Props) {
   return (
     <section className="controls">
       <fieldset>
@@ -45,6 +56,21 @@ export function Controls({ layerKind, onLayerKindChange, measure, onMeasureChang
           </label>
         ))}
         <p className="hint">{MEASURE_DESCRIPTIONS[measure]}</p>
+      </fieldset>
+
+      <fieldset>
+        <legend>Show places</legend>
+        {PLACE_TYPES.map(({ type, label, color }) => (
+          <label key={type} className="option">
+            <input
+              type="checkbox"
+              checked={visiblePlaceTypes.has(type)}
+              onChange={() => onTogglePlaceType(type)}
+            />
+            <span className="swatch dot" style={{ background: color }} aria-hidden="true" />
+            {label} <span className="count">({placeCounts[type]})</span>
+          </label>
+        ))}
       </fieldset>
     </section>
   )

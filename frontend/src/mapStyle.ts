@@ -1,6 +1,7 @@
 // Map colors and labels in one place, so the map, legend, and panel always agree.
-// Colors come from the validated data-viz palette: one blue ramp for magnitude (light = less),
-// and three categorical hues for place types.
+// Colors come from the validated data-viz palette: one blue ramp for tract values (light = less).
+// Pins avoid blue so a pin never looks like part of the tract shading: grocery stores (the
+// most common) are near-black, the other types take the palette's orange and aqua.
 import type { Measure, PlaceType, TractProperties } from './types'
 
 export const MEASURE_LABELS: Record<Measure, string> = {
@@ -33,7 +34,7 @@ export const OBESITY_BINS = [
 ] as const
 
 export const PLACE_TYPES: { type: PlaceType; label: string; color: string }[] = [
-  { type: 'grocery', label: 'Grocery stores', color: '#2a78d6' },
+  { type: 'grocery', label: 'Grocery stores', color: '#0b0b0b' },
   { type: 'pantry', label: 'Food pantries', color: '#eb6834' },
   { type: 'farmers_market', label: 'Farmers markets', color: '#1baf7a' },
 ]

@@ -1,6 +1,6 @@
-import type { GeoJSON as LeafletGeoJSON, PathOptions } from 'leaflet'
+import { geoJSON, type GeoJSON as LeafletGeoJSON, type PathOptions } from 'leaflet'
 import { useCallback, useEffect, useRef } from 'react'
-import { GeoJSON } from 'react-leaflet'
+import { GeoJSON, useMap } from 'react-leaflet'
 import { foodAccessColor, obesityColor } from '../mapStyle'
 import type { Measure, TractCollection, TractFeature, TractLayerKind } from '../types'
 
@@ -12,6 +12,14 @@ type Props = {
 
 export function TractLayer({ tracts, layerKind, measure }: Props) {
   const layerRef = useRef<LeafletGeoJSON>(null)
+  const map = useMap()
+
+  // Zoom to fit the whole county when the tract data arrives. The bounds are computed from the
+  // data itself, so this doesn't depend on when react-leaflet finishes creating the layer.
+  useEffect(() => {
+    const bounds = geoJSON(tracts).getBounds()
+    if (bounds.isValid()) map.fitBounds(bounds, { padding: [16, 16] })
+  }, [map, tracts])
 
   const style = useCallback(
     (feature?: TractFeature): PathOptions => {
