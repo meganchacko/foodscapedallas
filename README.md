@@ -31,6 +31,25 @@ docker compose up --build
 
 Stop with `docker compose down`. Add `-v` to also delete the database volume.
 
+The map needs data: run the pipeline once (see [Loading the data](#loading-the-data)). For the map's gray background without a watermark, add a free CARTO key to `.env` as `CARTO_API_KEY` (https://carto.com/basemaps/apikey) and restart the frontend.
+
+### API
+
+| Endpoint | Returns |
+| --- | --- |
+| `GET /health` | Whether the API, database, and cache are up (200 or 503) |
+| `GET /tracts` | Every tract as GeoJSON: population, obesity %, both food access definitions, priority area flags, distance to the nearest grocery store. Cached in Redis; the pipeline clears the cache after loading |
+| `GET /places?type=` | Grocery stores, pantries, and farmers markets as GeoJSON points; `type` is optional |
+
+Interactive docs: http://localhost:8000/docs
+
+### The map
+
+- Shade tracts by **food access** (either USDA definition) or **adult obesity rate**.
+- **Priority areas** outline tracts with low food access *and* an adult obesity rate above the county median. They show where the two problems occur together, not that one causes the other.
+- Pins for grocery stores, pantries, and farmers markets, filterable by type.
+- Click a tract for its details.
+
 ## Development
 
 ```bash
