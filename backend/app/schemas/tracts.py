@@ -16,6 +16,8 @@ class FoodAccess(BaseModel):
     low_access: bool | None
     low_income_low_access: bool | None
     low_access_population: int | None
+    # low access AND obesity above the county median (see app/services/priority.py)
+    priority_area: bool
 
 
 class TractProperties(BaseModel):
@@ -36,4 +38,6 @@ class TractFeature(BaseModel):
 
 class TractCollection(BaseModel):
     type: Literal["FeatureCollection"] = "FeatureCollection"
+    # county median of tract obesity estimates: the "high obesity" line for priority areas
+    obesity_median_pct: float | None
     features: list[TractFeature]

@@ -21,7 +21,7 @@ def seeded_client(client, clean_engine):
             text(
                 "INSERT INTO tracts (geoid, geom, population, obesity_pct) VALUES "
                 "('48113000001', ST_GeomFromText(:west, 4326), 1000, 40.0), "
-                "('48113000002', ST_GeomFromText(:east, 4326), 2000, NULL)"
+                "('48113000002', ST_GeomFromText(:east, 4326), 2000, 30.0)"
             ),
             {"west": WEST_TRACT, "east": EAST_TRACT},
         )
@@ -72,11 +72,20 @@ def test_tract_properties_include_stats_and_both_food_access_definitions(seeded_
     assert west["food_access"]["usda_2025_snap_retailers"]["low_access"] is False
 
 
-def test_tract_without_data_has_nulls_not_errors(seeded_client):
+def test_tract_without_food_access_data_has_an_empty_object(seeded_client):
     east = features_by_geoid(seeded_client.get("/tracts"))["48113000002"]["properties"]
 
-    assert east["obesity_pct"] is None
     assert east["food_access"] == {}
+
+
+def test_priority_area_follows_the_selected_food_access_definition(seeded_client):
+    body = seeded_client.get("/tracts").json()
+    west = features_by_geoid(seeded_client.get("/tracts"))["48113000001"]["properties"]
+
+    # median of 40 and 30 is 35; the west tract (40%) is above it
+    assert body["obesity_median_pct"] == 35.0
+    assert west["food_access"]["usda_2019_supermarkets"]["priority_area"] is True  # low access
+    assert west["food_access"]["usda_2025_snap_retailers"]["priority_area"] is False
 
 
 def test_nearest_grocery_distance_is_in_meters(seeded_client):

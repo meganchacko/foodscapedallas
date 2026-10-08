@@ -6,6 +6,7 @@ from collections import defaultdict
 from sqlalchemy import Engine, text
 
 from app.schemas.tracts import FoodAccess, TractCollection, TractFeature, TractProperties
+from app.services.priority import county_median, is_priority_area
 
 # 5 decimal places of latitude/longitude is about 1 m: plenty for a map, and much smaller JSON
 COORDINATE_DECIMALS = 5
@@ -53,6 +54,12 @@ def get_tract_collection(engine: Engine) -> TractCollection:
         tract_rows = connection.execute(TRACTS_QUERY, {"decimals": COORDINATE_DECIMALS}).all()
         food_access_rows = connection.execute(FOOD_ACCESS_QUERY).all()
 
+    obesity_by_geoid = {
+        row.geoid: float(row.obesity_pct) if row.obesity_pct is not None else None
+        for row in tract_rows
+    }
+    obesity_median = county_median(list(obesity_by_geoid.values()))
+
     # geoid -> {measure -> FoodAccess}
     food_access: dict[str, dict[str, FoodAccess]] = defaultdict(dict)
     for row in food_access_rows:
@@ -61,6 +68,9 @@ def get_tract_collection(engine: Engine) -> TractCollection:
             low_access=row.low_access,
             low_income_low_access=row.low_income_low_access,
             low_access_population=row.low_access_population,
+            priority_area=is_priority_area(
+                row.low_access, obesity_by_geoid.get(row.geoid), obesity_median
+            ),
         )
 
     features = [
@@ -69,7 +79,7 @@ def get_tract_collection(engine: Engine) -> TractCollection:
             properties=TractProperties(
                 geoid=row.geoid,
                 population=row.population,
-                obesity_pct=float(row.obesity_pct) if row.obesity_pct is not None else None,
+                obesity_pct=obesity_by_geoid[row.geoid],
                 nearest_grocery_m=(
                     round(row.nearest_grocery_m) if row.nearest_grocery_m is not None else None
                 ),
@@ -78,4 +88,4 @@ def get_tract_collection(engine: Engine) -> TractCollection:
         )
         for row in tract_rows
     ]
-    return TractCollection(features=features)
+    return TractCollection(obesity_median_pct=obesity_median, features=features)
