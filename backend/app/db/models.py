@@ -12,6 +12,7 @@ from sqlalchemy import (
     String,
     UniqueConstraint,
     func,
+    text,
 )
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
@@ -100,6 +101,9 @@ class Place(Base):
         # The stable key the pipeline upserts on, so re-running it never creates duplicates
         UniqueConstraint("source", "source_id"),
         Index("ix_places_geom", "geom", postgresql_using="gist"),
+        # Distance queries in meters cast to geography (geom::geography). Postgres can only use
+        # an index built on that same expression, so the geometry index above can't help them.
+        Index("ix_places_geography", text("(geom::geography)"), postgresql_using="gist"),
     )
 
     id: Mapped[int] = mapped_column(primary_key=True)
