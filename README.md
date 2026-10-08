@@ -40,6 +40,8 @@ The map needs data: run the pipeline once (see [Loading the data](#loading-the-d
 | `GET /health` | Whether the API, database, and cache are up (200 or 503) |
 | `GET /tracts` | Every tract as GeoJSON: population, obesity %, both food access definitions, priority area flags, distance to the nearest grocery store. Cached in Redis; the pipeline clears the cache after loading |
 | `GET /places?type=` | Grocery stores, pantries, and farmers markets as GeoJSON points; `type` is optional |
+| `GET /places/nearby?lat=&lng=&radius=&type=&snap=` | Places within `radius` miles (default 1, max 10), closest first, plus whether the point is in Dallas County and in a low-access tract |
+| `GET /geocode?q=` | Coordinates for an address or place name near Dallas (Nominatim). Cached in Redis for 30 days and limited to 1 request per second, per Nominatim's usage policy |
 
 Interactive docs: http://localhost:8000/docs
 
@@ -49,6 +51,12 @@ Interactive docs: http://localhost:8000/docs
 - **Priority areas** outline tracts with low food access *and* an adult obesity rate above the county median. They show where the two problems occur together, not that one causes the other.
 - Pins for grocery stores, pantries, and farmers markets, filterable by type.
 - Click a tract for its details.
+
+### Find food near me
+
+- Search by address or place name, or share your location (the browser asks first; coordinates are only used for the search and aren't stored).
+- Results within 0.5 to 10 miles, closest first, filterable by type and SNAP acceptance.
+- A notice when the location is in a low food access area, outside Dallas County, or has nothing nearby (with a one-click wider search).
 
 ## Development
 
@@ -103,6 +111,7 @@ It needs a free Census API key in `.env` (`CENSUS_API_KEY`, sign up at https://a
 | Adult obesity | CDC PLACES 2025 release | Modeled estimates, not diagnoses |
 | Grocery stores, farmers markets | OpenStreetMap (Overpass API) | Supermarkets and greengrocers; marketplaces with "farmers" in the name |
 | Food pantries | Hand-entered from the North Texas Food Bank pantry finder | `pipeline/seeds/pantries.csv` |
+| SNAP acceptance, SNAP farmers markets | USDA SNAP Retailer Locator data (stores authorized 2005–2025) | Current authorizations only; see matching note below |
 
 Both food access definitions use the standard low-access threshold: more than 1 mile from a store in urban areas, 10 miles in rural areas, measured in a straight line.
 
@@ -112,7 +121,8 @@ Both food access definitions use the standard low-access threshold: more than 1 
 - **The 2019 data reflects stores as of 2019.** Supermarkets that opened or closed since then aren't counted.
 - **The two definitions give very different maps.** Under the 2019 supermarket definition, 111 Dallas tracts are low-income and low-access; under the 2025 any-SNAP-store definition, 6 are. Neither is wrong; they answer different questions.
 - **Two tracts have no data** (48113980000, 48113980100): unpopulated special-use areas.
-- **OpenStreetMap is volunteer-mapped.** Grocery coverage in Dallas is good but not complete, farmers markets are sparse, and SNAP/WIC acceptance is almost never recorded (stored as unknown).
+- **OpenStreetMap is volunteer-mapped.** Grocery coverage in Dallas is good but not complete, and a few non-grocery businesses are mis-tagged as supermarkets.
+- **SNAP acceptance is matched, not exact.** An OpenStreetMap grocery store is marked as accepting SNAP when a currently authorized SNAP store with a similar name is within 250 m (242 of 290 matched). Unmatched stores show SNAP as unknown, not "no". WIC acceptance has no open dataset and is always unknown.
 
 ## Running the original model
 
