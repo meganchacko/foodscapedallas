@@ -54,6 +54,8 @@ services:
     build: ./frontend
     environment:
       API_PROXY_TARGET: http://backend:8000
+      # ${CARTO_API_KEY:-} reads CARTO_API_KEY from .env (empty if unset)
+      VITE_CARTO_API_KEY: ${CARTO_API_KEY:-}
     ports:
       - "5173:5173"
     volumes:
