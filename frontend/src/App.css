@@ -1,25 +1,76 @@
-.app {
-  max-width: 480px;
-  margin: 64px auto;
-  padding: 0 16px;
+.layout {
+  display: grid;
+  grid-template-columns: 340px 1fr;
+  height: 100vh;
 }
 
-.status-list {
-  list-style: none;
+.sidebar {
+  overflow-y: auto;
+  padding: 20px;
+  border-right: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.map-area,
+.map {
+  height: 100%;
+  width: 100%;
+}
+
+h1 {
+  margin: 0;
+  font-size: 1.4rem;
+}
+
+.subtitle {
+  margin: 4px 0 16px;
+  color: var(--text-secondary);
+}
+
+fieldset {
+  border: none;
+  margin: 0 0 16px;
   padding: 0;
 }
 
-.status-list li {
-  display: flex;
-  justify-content: space-between;
-  padding: 8px 0;
-  border-bottom: 1px solid #e5e7eb;
+fieldset > legend {
+  font-weight: 600;
+  margin-bottom: 6px;
 }
 
-.ok {
-  color: #15803d;
+.option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 0;
+  cursor: pointer;
+}
+
+.hint {
+  margin: 6px 0 0;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
 }
 
 .error {
-  color: #b91c1c;
+  color: var(--critical);
+}
+
+/* Phones: map on top, controls underneath */
+@media (max-width: 760px) {
+  .layout {
+    grid-template-columns: 1fr;
+    grid-template-rows: 60vh auto;
+    height: auto;
+  }
+
+  .map-area {
+    order: -1;
+    height: 60vh;
+  }
+
+  .sidebar {
+    border-right: none;
+    border-top: 1px solid var(--border);
+  }
 }
