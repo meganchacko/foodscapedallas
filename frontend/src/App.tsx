@@ -1,9 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
 import { fetchPlaces, fetchTracts } from './api'
+import { Pane } from 'react-leaflet'
 import { Controls } from './components/Controls'
+import { Legend } from './components/Legend'
 import { MapView } from './components/MapView'
 import { PlaceLayer } from './components/PlaceLayer'
 import { TractLayer } from './components/TractLayer'
+import { TractPanel } from './components/TractPanel'
 import type {
   Measure,
   PlaceCollection,
@@ -22,6 +25,8 @@ function App() {
   const [visiblePlaceTypes, setVisiblePlaceTypes] = useState<Set<PlaceType>>(
     new Set(['grocery', 'pantry', 'farmers_market']),
   )
+  const [showPriority, setShowPriority] = useState(false)
+  const [selectedGeoid, setSelectedGeoid] = useState<string | null>(null)
 
   useEffect(() => {
     // The two requests run in parallel; each part of the map appears when its data arrives
@@ -38,6 +43,15 @@ function App() {
     for (const place of places?.features ?? []) counts[place.properties.type] += 1
     return counts
   }, [places])
+
+  const priorityCount = useMemo(
+    () =>
+      tracts?.features.filter((f) => f.properties.food_access[measure]?.priority_area).length ?? 0,
+    [tracts, measure],
+  )
+
+  const selectedTract =
+    tracts?.features.find((f) => f.properties.geoid === selectedGeoid)?.properties ?? null
 
   function togglePlaceType(type: PlaceType) {
     setVisiblePlaceTypes((current) => {
@@ -63,15 +77,44 @@ function App() {
           visiblePlaceTypes={visiblePlaceTypes}
           onTogglePlaceType={togglePlaceType}
           placeCounts={placeCounts}
+          showPriority={showPriority}
+          onShowPriorityChange={setShowPriority}
+          priorityCount={priorityCount}
         />
+        <Legend
+          layerKind={layerKind}
+          measure={measure}
+          showPriority={showPriority}
+          obesityMedian={tracts?.obesity_median_pct ?? null}
+        />
+        {selectedTract ? (
+          <TractPanel
+            tract={selectedTract}
+            measure={measure}
+            onClose={() => setSelectedGeoid(null)}
+          />
+        ) : (
+          tracts && <p className="hint">Click a tract to see its details.</p>
+        )}
         {loadError && <p className="error">Couldn't load map data. Is the API running?</p>}
         {!tracts && !loadError && <p className="hint">Loading tracts…</p>}
       </aside>
       <main className="map-area">
         <MapView>
-          {tracts && <TractLayer tracts={tracts} layerKind={layerKind} measure={measure} />}
-          {/* rendered after the tracts so pins draw on top */}
-          {places && <PlaceLayer places={places} visibleTypes={visiblePlaceTypes} />}
+          {tracts && (
+            <TractLayer
+              tracts={tracts}
+              layerKind={layerKind}
+              measure={measure}
+              showPriority={showPriority}
+              selectedGeoid={selectedGeoid}
+              onSelect={setSelectedGeoid}
+            />
+          )}
+          {/* Pins get their own pane (layer) above the tracts, so tract outlines never cover them */}
+          <Pane name="places" style={{ zIndex: 450 }}>
+            {places && <PlaceLayer places={places} visibleTypes={visiblePlaceTypes} />}
+          </Pane>
         </MapView>
       </main>
     </div>

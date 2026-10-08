@@ -16,6 +16,7 @@ export const MEASURE_DESCRIPTIONS: Record<Measure, string> = {
 }
 
 export const NO_DATA_COLOR = '#e1e0d9'
+export const INK = '#0b0b0b'
 
 // Food access: three ordered classes
 export const FOOD_ACCESS_CLASSES = [
@@ -56,6 +57,28 @@ export function obesityColor(tract: TractProperties): string {
   const bin = OBESITY_BINS.find((b) => tract.obesity_pct! < b.max)
   return (bin ?? OBESITY_BINS[OBESITY_BINS.length - 1]).color
 }
+
+export function foodAccessLabel(tract: TractProperties, measure: Measure): string {
+  const access = tract.food_access[measure]
+  if (!access || access.low_access === null) return 'No data'
+  if (access.low_income_low_access) return FOOD_ACCESS_CLASSES[2].label
+  if (access.low_access) return FOOD_ACCESS_CLASSES[1].label
+  return FOOD_ACCESS_CLASSES[0].label
+}
+
+// GEOID 48113000101 -> "Tract 1.01": the last 6 digits are the tract number with 2 implied
+// decimal places, which is how the Census writes tract names
+export function tractName(geoid: string): string {
+  const number = Number(geoid.slice(-6)) / 100
+  return `Tract ${number}`
+}
+
+export const PRIORITY_EXPLANATION =
+  'Outlined tracts have low food access and an adult obesity rate above the county median.'
+
+// Required wording: the overlap shows where problems coincide, not that one causes the other
+export const NOT_CAUSATION =
+  "This shows where the two occur together. It doesn't mean low food access causes obesity."
 
 export const METERS_PER_MILE = 1609.344
 

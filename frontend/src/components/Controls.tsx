@@ -9,6 +9,9 @@ type Props = {
   visiblePlaceTypes: Set<PlaceType>
   onTogglePlaceType: (type: PlaceType) => void
   placeCounts: Record<PlaceType, number>
+  showPriority: boolean
+  onShowPriorityChange: (show: boolean) => void
+  priorityCount: number
 }
 
 const LAYER_LABELS: Record<TractLayerKind, string> = {
@@ -24,6 +27,9 @@ export function Controls({
   visiblePlaceTypes,
   onTogglePlaceType,
   placeCounts,
+  showPriority,
+  onShowPriorityChange,
+  priorityCount,
 }: Props) {
   return (
     <section className="controls">
@@ -56,6 +62,19 @@ export function Controls({
           </label>
         ))}
         <p className="hint">{MEASURE_DESCRIPTIONS[measure]}</p>
+      </fieldset>
+
+      <fieldset>
+        <legend>Priority areas</legend>
+        <label className="option">
+          <input
+            type="checkbox"
+            checked={showPriority}
+            onChange={(event) => onShowPriorityChange(event.target.checked)}
+          />
+          Highlight low access + high obesity{' '}
+          <span className="count">({priorityCount} tracts)</span>
+        </label>
       </fieldset>
 
       <fieldset>

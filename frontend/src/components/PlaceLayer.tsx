@@ -27,6 +27,7 @@ export function PlaceLayer({ places, visibleTypes }: Props) {
               key={info.id}
               center={[lat, lng]}
               radius={5}
+              pane="places"
               pathOptions={{
                 fillColor: PLACE_COLORS[info.type],
                 fillOpacity: 1,
