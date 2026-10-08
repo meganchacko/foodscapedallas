@@ -16,6 +16,7 @@ from pipeline.loaders import (
     census_blocks,
     osm_places,
     pantries,
+    snap_retailers,
     tracts,
     usda_2019,
     usda_2025,
@@ -31,6 +32,8 @@ STEPS = [
     ("usda_2025", usda_2025.load),
     ("cdc_places", cdc_places.load),
     ("osm_places", osm_places.load),
+    # after osm_places: it marks which OSM grocery stores accept SNAP
+    ("snap_retailers", snap_retailers.load),
     ("pantries", pantries.load),
 ]
 
