@@ -57,6 +57,7 @@ Interactive docs: http://localhost:8000/docs
 - Search by address or place name, or share your location (the browser asks first; coordinates are only used for the search and aren't stored).
 - Results within 0.5 to 10 miles, closest first, filterable by type and SNAP acceptance.
 - A notice when the location is in a low food access area, outside Dallas County, or has nothing nearby (with a one-click wider search).
+- **Transit directions** on every result: opens Google Maps on the public transit tab, from the searched location to the place's address (a plain Google Maps link; no API key).
 
 ## Development
 
@@ -74,7 +75,7 @@ pytest
 ruff check . && ruff format --check .
 ```
 
-Frontend: see `frontend/README.md`.
+Frontend (from `frontend/`): `npm test` (Vitest), `npm run lint`, `npm run build`. See `frontend/README.md`.
 
 ### Database migrations
 
