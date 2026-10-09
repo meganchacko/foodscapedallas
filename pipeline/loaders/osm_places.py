@@ -33,6 +33,15 @@ OVERPASS_QUERY = """
 out center tags;
 """
 
+# OpenStreetMap places tagged shop=supermarket that aren't grocery stores (volunteer tagging
+# mistakes), found by checking stores that didn't match USDA's SNAP list. Better long-term fix:
+# correct the tags on openstreetmap.org, then remove them from this list.
+EXCLUDED_ELEMENTS = {
+    "node/12520457070": "M|C Criminal Law (a law office)",
+    "node/12137269892": "Charter Furniture Clearance Outlet (a furniture store)",
+    "node/12140021739": "Next Exit Logistics (a logistics company)",
+}
+
 MAX_ATTEMPTS = 3
 RETRY_WAIT_SECONDS = 30
 
@@ -101,8 +110,13 @@ def parse_element(element: dict) -> dict | None:
     }
 
 
+def usable_places(elements: list[dict]) -> list[dict]:
+    places = [place for place in map(parse_element, elements) if place is not None]
+    return [place for place in places if place["source_id"] not in EXCLUDED_ELEMENTS]
+
+
 def load(engine: Engine) -> int:
     elements = fetch_elements()
-    places = [place for place in map(parse_element, elements) if place is not None]
+    places = usable_places(elements)
     logger.info("OSM returned %d elements; %d usable", len(elements), len(places))
     return sync_places(engine, SOURCE, places)

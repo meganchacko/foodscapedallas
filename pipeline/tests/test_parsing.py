@@ -5,7 +5,7 @@ import pandas as pd
 from pipeline.loaders.cdc_places import parse_obesity
 from pipeline.loaders.census_blocks import parse_population_response
 from pipeline.loaders.food_access import to_count, to_flag
-from pipeline.loaders.osm_places import parse_element
+from pipeline.loaders.osm_places import parse_element, usable_places
 from pipeline.loaders.pantries import read_pantries
 
 
@@ -85,6 +85,19 @@ def test_osm_place_without_a_name_is_skipped():
     element = {"type": "node", "id": 1, "lat": 32.7, "lon": -96.9, "tags": {"shop": "supermarket"}}
 
     assert parse_element(element) is None
+
+
+def test_osm_places_on_the_exclusion_list_are_dropped():
+    law_office = {
+        "type": "node",
+        "id": 12520457070,
+        "lat": 32.93,
+        "lon": -96.81,
+        "tags": {"shop": "supermarket", "name": "M|C Criminal Law"},
+    }
+    store = {**law_office, "id": 1, "tags": {"shop": "supermarket", "name": "Real Grocery"}}
+
+    assert [place["name"] for place in usable_places([law_office, store])] == ["Real Grocery"]
 
 
 def test_pantry_csv_rows_become_places(tmp_path):
