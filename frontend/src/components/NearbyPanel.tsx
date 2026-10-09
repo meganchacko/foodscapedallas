@@ -1,6 +1,7 @@
 import { type FormEvent, useState } from 'react'
 import { PLACE_COLORS, PLACE_TYPES, formatMiles } from '../mapStyle'
-import { RADIUS_OPTIONS, type NearbySearch } from '../useNearbySearch'
+import { directionsUrl } from '../directions'
+import { RADIUS_OPTIONS, type NearbySearch, type SearchPoint } from '../useNearbySearch'
 import type { NearbyPlace } from '../types'
 
 const TYPE_LABELS = Object.fromEntries(PLACE_TYPES.map(({ type, label }) => [type, label]))
@@ -86,6 +87,7 @@ export function NearbyPanel({ search }: { search: NearbySearch }) {
           <p className="hint">Near: {search.point.label}</p>
           <LocationNotices search={search} />
           <ResultsList
+            origin={search.point}
             places={search.places}
             selectedPlaceId={search.selectedPlaceId}
             onSelect={search.setSelectedPlaceId}
@@ -139,12 +141,13 @@ function LocationNotices({ search }: { search: NearbySearch }) {
 }
 
 type ResultsListProps = {
+  origin: SearchPoint
   places: NearbyPlace[]
   selectedPlaceId: number | null
   onSelect: (id: number) => void
 }
 
-function ResultsList({ places, selectedPlaceId, onSelect }: ResultsListProps) {
+function ResultsList({ origin, places, selectedPlaceId, onSelect }: ResultsListProps) {
   return (
     <ol className="results" aria-label="Nearby places, closest first">
       {places.map((place) => (
@@ -170,8 +173,24 @@ function ResultsList({ places, selectedPlaceId, onSelect }: ResultsListProps) {
             {place.address && <span className="result-detail">{place.address}</span>}
             {place.hours && <span className="result-detail">Hours: {place.hours}</span>}
           </button>
+          {/* A link, not inside the button above: interactive elements can't be nested */}
+          <DirectionsLink origin={origin} place={place} />
         </li>
       ))}
     </ol>
+  )
+}
+
+export function DirectionsLink({ origin, place }: { origin: SearchPoint; place: NearbyPlace }) {
+  return (
+    <a
+      className="directions-link"
+      href={directionsUrl(origin, place)}
+      // new tab; noopener stops the new page from controlling this one, noreferrer hides our URL
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      Transit directions (opens Google Maps)
+    </a>
   )
 }

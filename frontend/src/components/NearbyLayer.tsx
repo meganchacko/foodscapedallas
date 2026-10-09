@@ -3,6 +3,7 @@ import { useEffect } from 'react'
 import { Circle, CircleMarker, Popup, Tooltip, useMap } from 'react-leaflet'
 import { INK, METERS_PER_MILE, PLACE_COLORS, SEARCH_POINT_COLOR, formatMiles } from '../mapStyle'
 import type { NearbySearch } from '../useNearbySearch'
+import { DirectionsLink } from './NearbyPanel'
 
 export function NearbyLayer({ search }: { search: NearbySearch }) {
   const map = useMap()
@@ -64,6 +65,7 @@ export function NearbyLayer({ search }: { search: NearbySearch }) {
               <div>{formatMiles(place.distance_m)} away</div>
               {place.address && <div>{place.address}</div>}
               {place.accepts_snap && <div>Accepts SNAP</div>}
+              <DirectionsLink origin={point} place={place} />
             </Popup>
           </CircleMarker>
         )

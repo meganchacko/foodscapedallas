@@ -259,6 +259,17 @@ select {
   color: var(--text-secondary);
 }
 
+.directions-link {
+  display: inline-block;
+  margin: 0 0 8px 26px;
+  font-size: 0.9rem;
+  color: var(--link);
+}
+
+.leaflet-popup .directions-link {
+  margin: 6px 0 0;
+}
+
 .notice {
   margin: 12px 0;
   padding: 10px 12px;
