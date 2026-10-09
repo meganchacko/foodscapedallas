@@ -7,4 +7,5 @@ npm install
 npm run dev     # dev server on http://localhost:5173, proxies /api to the backend
 npm run build   # type-check and build to dist/
 npm run lint    # oxlint
+npm test        # vitest
 ```
