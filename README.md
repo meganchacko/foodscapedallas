@@ -8,7 +8,7 @@ FoodScape Dallas is a website that maps food access in Dallas County. It helps c
 backend/              FastAPI app (Python 3.12)
 frontend/             React + TypeScript app (Vite)
 pipeline/             data loaders for USDA, CDC, Census, OpenStreetMap, pantries
-ml/                   obesity model
+ml/                   obesity model for the health check (ml/v1_linear_regression/ is the original version)
 docker-compose.yml    local stack: PostGIS, Redis, backend, frontend
 .github/workflows/    CI: lint, backend tests, frontend build, Docker builds
 ```
@@ -125,13 +125,15 @@ Both food access definitions use the standard low-access threshold: more than 1 
 - **OpenStreetMap is volunteer-mapped.** Grocery coverage in Dallas is good but not complete, and a few non-grocery businesses are mis-tagged as supermarkets.
 - **SNAP acceptance is matched, not exact.** An OpenStreetMap grocery store is marked as accepting SNAP when a currently authorized SNAP store with a similar name is within 250 m (242 of 290 matched). Unmatched stores show SNAP as unknown, not "no". WIC acceptance has no open dataset and is always unknown.
 
-## Running the original model
+## Running the original model (v1)
+
+The first version of the model: linear regression on the 0–6 obesity level. It's kept to show how the model changed; the health check uses the newer model in `ml/`.
 
 ```bash
-pip install -r ml/requirements.txt
-cd ml
+pip install -r ml/v1_linear_regression/requirements.txt
+cd ml/v1_linear_regression
 python part1.py   # linear regression via gradient descent in numpy
 python part2.py   # linear regression via scikit-learn's SGDRegressor
 ```
 
-Logs and plots are written to `ml/logs/` and `ml/plots/`. See `ml/README.md` for details on the model.
+Logs and plots are written to `logs/` and `plots/` in that folder. See `ml/v1_linear_regression/README.md`.

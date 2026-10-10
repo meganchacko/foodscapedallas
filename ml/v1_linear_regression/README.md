@@ -1,3 +1,5 @@
+> **This is the original version (v1) of the model, kept for reference.** It predicts the 0–6 obesity level with linear regression and uses height as an input, which leaks the answer (the label comes from BMI). The health check uses the newer model in `ml/` (see `ml/README.md`).
+
 # obesity-linear-regression
 Linear regression model to predict likelihood of obesity in subjects based on eating habits and physical conditions.
 
