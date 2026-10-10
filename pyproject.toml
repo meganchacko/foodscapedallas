@@ -17,6 +17,8 @@ known-third-party = ["alembic"]
 
 [tool.pytest.ini_options]
 # run pytest from the repo root. backend/ is on the path so tests can `import app`;
-# the repo root is on it so they can `import pipeline`.
-testpaths = ["backend/tests", "pipeline/tests"]
+# the repo root is on it so they can `import pipeline` and `import ml`.
+testpaths = ["backend/tests", "pipeline/tests", "ml/tests"]
 pythonpath = ["backend", "."]
+# numpy's macOS (Accelerate) backend raises spurious matmul warnings; see ml/train.py
+filterwarnings = ["ignore:.*encountered in matmul:RuntimeWarning"]
