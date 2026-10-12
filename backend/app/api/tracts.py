@@ -26,12 +26,12 @@ def list_tracts(
     """Every Dallas County tract as GeoJSON, with its food access and health stats.
 
     Cache-aside: return the copy in Redis if there is one; otherwise build it from the
-    database, store it in Redis, and return it.
+    database, store it in Redis, and return it. The X-Cache header says which happened.
     """
     cached = get_cached(cache, TRACTS_CACHE_KEY)
     if cached is not None:
-        return Response(content=cached, media_type="application/json")
+        return Response(content=cached, media_type="application/json", headers={"X-Cache": "HIT"})
 
     body = get_tract_collection(engine).model_dump_json()
     set_cached(cache, TRACTS_CACHE_KEY, body, CACHE_TTL_SECONDS)
-    return Response(content=body, media_type="application/json")
+    return Response(content=body, media_type="application/json", headers={"X-Cache": "MISS"})

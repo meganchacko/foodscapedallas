@@ -63,11 +63,13 @@ def test_repeated_search_is_served_from_the_cache(client_with):
     fake = FakeNominatim()
     client = client_with(fake)
 
-    client.get("/geocode", params={"q": "1500 Marilla St"})
+    first = client.get("/geocode", params={"q": "1500 Marilla St"})
     second = client.get("/geocode", params={"q": "1500 marilla st"})
 
     assert second.status_code == 200
     assert fake.calls == 1  # the second search never reached Nominatim
+    assert first.headers["X-Cache"] == "MISS"
+    assert second.headers["X-Cache"] == "HIT"
 
 
 def test_no_match_is_a_404_and_is_cached(client_with):
@@ -79,6 +81,7 @@ def test_no_match_is_a_404_and_is_cached(client_with):
 
     assert first.status_code == second.status_code == 404
     assert fake.calls == 1
+    assert second.headers["X-Cache"] == "HIT"
 
 
 def test_nominatim_failure_is_a_503(client_with):

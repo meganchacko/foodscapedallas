@@ -40,6 +40,12 @@ class GeocodeResult:
     display_name: str
 
 
+@dataclass(frozen=True)
+class GeocodeLookup:
+    result: GeocodeResult | None  # None means no match
+    from_cache: bool  # answered from Redis, without calling Nominatim
+
+
 class GeocoderUnavailable(Exception):
     """Nominatim couldn't be reached, or we'd have to wait too long to stay under its limit."""
 
@@ -81,13 +87,13 @@ class NominatimGeocoder:
         self.cache = cache
         self.fetch = fetch
 
-    def geocode(self, query: str) -> GeocodeResult | None:
+    def geocode(self, query: str) -> GeocodeLookup:
         key = f"geocode:v1:{normalize(query)}"
         cached = get_cached(self.cache, key)
         if cached is not None:
             data = json.loads(cached)
             # "no match" is cached too, so a repeated typo doesn't hit Nominatim again
-            return GeocodeResult(**data) if data else None
+            return GeocodeLookup(GeocodeResult(**data) if data else None, from_cache=True)
 
         self._wait_for_rate_limit()
         try:
@@ -98,7 +104,7 @@ class NominatimGeocoder:
         set_cached(
             self.cache, key, json.dumps(asdict(result) if result else None), CACHE_TTL_SECONDS
         )
-        return result
+        return GeocodeLookup(result, from_cache=False)
 
     def _wait_for_rate_limit(self) -> None:
         """Allow one Nominatim request per second across every API process.

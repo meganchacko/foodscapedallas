@@ -116,6 +116,8 @@ def test_second_request_is_served_from_the_cache(seeded_client):
 
     assert second.status_code == 200
     assert second.json() == first.json()
+    assert first.headers["X-Cache"] == "MISS"
+    assert second.headers["X-Cache"] == "HIT"
 
 
 def test_tracts_still_work_when_redis_is_down(seeded_client):
@@ -125,3 +127,9 @@ def test_tracts_still_work_when_redis_is_down(seeded_client):
 
     assert response.status_code == 200
     assert len(response.json()["features"]) == 2
+
+
+def test_responses_report_server_time(seeded_client):
+    response = seeded_client.get("/tracts")
+
+    assert response.headers["Server-Timing"].startswith("app;dur=")
