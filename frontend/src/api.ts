@@ -18,14 +18,22 @@ export class ApiError extends Error {
   }
 }
 
-// "/api" is forwarded to the backend by the Vite dev server proxy (see vite.config.ts)
-async function getJson<T>(path: string, params?: Record<string, string>): Promise<T> {
+// Where the API lives. Locally that's "/api", which the Vite dev server forwards to the backend
+// (see vite.config.ts). The production build is static files on a different address than the
+// API, so it's built with VITE_API_BASE_URL set to the API's URL.
+export const API_BASE = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? '/api'
+
+export function apiUrl(path: string, params?: Record<string, string>): string {
   const query = params ? `?${new URLSearchParams(params)}` : ''
-  return readJson<T>(await fetch(`/api${path}${query}`), path)
+  return `${API_BASE.replace(/\/$/, '')}${path}${query}`
+}
+
+async function getJson<T>(path: string, params?: Record<string, string>): Promise<T> {
+  return readJson<T>(await fetch(apiUrl(path, params)), path)
 }
 
 async function postJson<T>(path: string, body: unknown): Promise<T> {
-  const response = await fetch(`/api${path}`, {
+  const response = await fetch(apiUrl(path), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
