@@ -83,7 +83,15 @@ class CensusBlock(Base):
     """A 2020 census block, stored as its center point. Used to count people near a location."""
 
     __tablename__ = "census_blocks"
-    __table_args__ = (Index("ix_census_blocks_center", "center", postgresql_using="gist"),)
+    __table_args__ = (
+        Index("ix_census_blocks_center", "center", postgresql_using="gist"),
+        # For "people within N meters" queries, which measure in meters with ::geography
+        Index(
+            "ix_census_blocks_geography",
+            text("(center::geography)"),
+            postgresql_using="gist",
+        ),
+    )
 
     # 15 digits: the tract GEOID (11) + block number (4)
     geoid: Mapped[str] = mapped_column(String(15), primary_key=True)
