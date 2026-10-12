@@ -112,6 +112,17 @@ def test_men_and_people_over_61_get_a_reliability_note(api):
     assert woman["notes"] == []
 
 
+def test_model_card_describes_the_served_model(api):
+    response = api.get("/model-card")
+
+    assert response.status_code == 200
+    card = response.json()
+    assert card["model_version"] == "2.0"
+    assert {"Height", "Weight"} == {f["name"] for f in card["excluded_features"]}
+    assert "Female" in card["performance_by_group"]["sex"]
+    assert card["limitations"]
+
+
 # --- The model and its explanations ---
 
 

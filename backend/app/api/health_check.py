@@ -7,7 +7,7 @@ from sqlalchemy import Engine, insert
 from app.db.database import get_engine
 from app.db.models import HealthCheck
 from app.schemas.health_check import HealthCheckRequest, HealthCheckResponse
-from app.services.health_check import HealthModel, get_health_model
+from app.services.health_check import HealthModel, get_health_model, get_model_card
 
 router = APIRouter()
 
@@ -39,3 +39,10 @@ def health_check(
         result.saved = True
 
     return result
+
+
+@router.get("/model-card")
+def model_card(card: Annotated[dict, Depends(get_model_card)]) -> dict:
+    """How the health check model was built, how accurate it is overall and for different
+    groups, and its limitations (see ml/train.py)."""
+    return card

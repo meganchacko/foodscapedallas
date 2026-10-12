@@ -10,6 +10,7 @@ one piece per column: coefficient x (this person's value - the average value). S
 pieces for one question (e.g. the 5 transportation columns) gives that answer's effect.
 """
 
+import json
 from dataclasses import dataclass
 from functools import lru_cache
 
@@ -26,6 +27,7 @@ from app.schemas.health_check import (
 )
 
 MODEL_FILE = "obesity_model.joblib"
+MODEL_CARD_FILE = "model_card.json"
 TOP_FACTORS = 5
 OLDEST_AGE_IN_DATA = 61
 
@@ -213,3 +215,11 @@ def get_health_model() -> HealthModel:
     joblib files can run code when loaded, so only ever load a model file we built ourselves.
     """
     return HealthModel(joblib.load(get_settings().model_dir / MODEL_FILE))
+
+
+@lru_cache
+def get_model_card() -> dict:
+    """The model card written by ml/train.py: how the model was built, how well it works, and its
+    limits. Read once; it only changes when the model is retrained (and the server restarted).
+    """
+    return json.loads((get_settings().model_dir / MODEL_CARD_FILE).read_text())
