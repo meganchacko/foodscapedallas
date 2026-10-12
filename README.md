@@ -12,9 +12,14 @@ ml/                   health check model: training script, data, saved model, mo
 scripts/              spatial index benchmark
 loadtest/             Locust load test
 docs/                 hardening summary, benchmark and load test results
+deploy/               Azure setup, deploy, and teardown scripts (see deploy/README.md)
 docker-compose.yml    local stack: PostGIS, Redis, backend, frontend
 .github/workflows/    CI: lint, backend tests, frontend build, Docker builds
 ```
+
+## Live site
+
+Deployed on Azure: Container Apps (API + Redis sidecar, scales to zero), PostgreSQL Flexible Server with PostGIS, Static Web Apps (frontend), Key Vault (secrets), and a weekly scheduled job that reloads the data. Every push to `main` that passes CI deploys automatically. See [`deploy/README.md`](deploy/README.md).
 
 ## Running the app
 
