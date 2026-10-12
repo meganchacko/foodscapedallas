@@ -9,6 +9,9 @@ backend/              FastAPI app (Python 3.12)
 frontend/             React + TypeScript app (Vite)
 pipeline/             data loaders for USDA, CDC, Census, OpenStreetMap, pantries
 ml/                   health check model: training script, data, saved model, model card (v1_linear_regression/ is the original)
+scripts/              spatial index benchmark
+loadtest/             Locust load test
+docs/                 hardening summary, benchmark and load test results
 docker-compose.yml    local stack: PostGIS, Redis, backend, frontend
 .github/workflows/    CI: lint, backend tests, frontend build, Docker builds
 ```
@@ -32,6 +35,10 @@ docker compose up --build
 Stop with `docker compose down`. Add `-v` to also delete the database volume.
 
 The map needs data: run the pipeline once (see [Loading the data](#loading-the-data)). For the map's gray background without a watermark, add a free CARTO key to `.env` as `CARTO_API_KEY` (https://carto.com/basemaps/apikey) and restart the frontend.
+
+### Performance, reliability, and privacy
+
+See [`docs/hardening.md`](docs/hardening.md): caching (`X-Cache`), timing (`Server-Timing`), rate limiting (`429`), JSON request logs with request IDs, the spatial index benchmark, and the load test, each with how to see it and the measured numbers.
 
 ### API
 
