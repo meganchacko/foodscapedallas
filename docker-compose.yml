@@ -28,7 +28,10 @@ services:
       retries: 10
 
   backend:
-    build: ./backend
+    # Built from the repo root so the image can include the trained model (ml/model/)
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
     # Apply any pending migrations, then start the server.
     # --reload restarts the server when a file in the mounted app/ folder changes.
     command: sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
@@ -44,6 +47,7 @@ services:
     volumes:
       - ./backend/app:/app/app
       - ./backend/alembic:/app/alembic
+      - ./ml/model:/app/model # a retrained model is picked up without rebuilding
     depends_on:
       db:
         condition: service_healthy

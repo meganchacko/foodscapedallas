@@ -1,4 +1,5 @@
 from functools import lru_cache
+from pathlib import Path
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -19,6 +20,10 @@ class Settings(BaseSettings):
 
     redis_host: str = "localhost"
     redis_port: int = 6379
+
+    # The trained health check model. Locally that's ml/model/ in the repo; the Docker image
+    # sets MODEL_DIR=/app/model.
+    model_dir: Path = Path(__file__).resolve().parents[2] / "ml" / "model"
 
     @property
     def database_url(self) -> str:
