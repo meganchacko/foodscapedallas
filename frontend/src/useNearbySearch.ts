@@ -116,6 +116,11 @@ export function useNearbySearch() {
     })
   }
 
+  // Used by the health check's "Find farmers markets near you" button
+  function showOnlyType(type: PlaceType) {
+    setVisibleTypes(new Set([type]))
+  }
+
   return {
     point,
     radiusMiles,
@@ -124,6 +129,7 @@ export function useNearbySearch() {
     setSnapOnly,
     visibleTypes,
     toggleType,
+    showOnlyType,
     response,
     places,
     locating,

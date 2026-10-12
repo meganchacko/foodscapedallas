@@ -3,6 +3,7 @@ import type { View } from '../types'
 const TABS: { view: View; label: string }[] = [
   { view: 'explore', label: 'Map explorer' },
   { view: 'nearby', label: 'Find food near me' },
+  { view: 'health', label: 'Health check' },
 ]
 
 export function ViewTabs({ view, onChange }: { view: View; onChange: (view: View) => void }) {

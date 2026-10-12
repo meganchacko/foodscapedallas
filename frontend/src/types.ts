@@ -73,4 +73,76 @@ export type NearbyResponse = {
 }
 
 // Which tab the app shows
-export type View = 'explore' | 'nearby'
+export type View = 'explore' | 'nearby' | 'health'
+
+// POST /health-check (field names and values match backend/app/schemas/health_check.py)
+export type HealthCheckAnswers = {
+  sex: 'Female' | 'Male'
+  age: number
+  family_history_overweight: boolean
+  high_calorie_food_often: boolean
+  vegetables: number
+  main_meals_per_day: number
+  snacking: 'no' | 'Sometimes' | 'Frequently' | 'Always'
+  smokes: boolean
+  water: number
+  tracks_calories: boolean
+  physical_activity: number
+  screen_time: number
+  alcohol: 'no' | 'Sometimes' | 'Frequently' | 'Always'
+  transportation: 'Automobile' | 'Bike' | 'Motorbike' | 'Public_Transportation' | 'Walking'
+}
+
+export type HealthCheckFactor = {
+  field: keyof HealthCheckAnswers
+  label: string
+  effect: number
+  direction: 'raises' | 'lowers'
+  changeable: boolean
+  actionable: boolean
+}
+
+export type HealthCheckResult = {
+  probability: number
+  model_version: string
+  factors: HealthCheckFactor[]
+  suggestion: { place_type: 'grocery' | 'farmers_market' | null; message: string } | null
+  notes: string[]
+  saved: boolean
+}
+
+// GET /model-card (only the parts the page shows)
+export type Metrics = {
+  n: number
+  obese_share: number
+  accuracy: number
+  precision: number
+  recall: number
+  brier_score: number
+  roc_auc?: number
+  baseline_accuracy?: number
+}
+
+export type ModelCard = {
+  name: string
+  model_version: string
+  trained_on: string
+  intended_use: string
+  not_intended_for: string[]
+  training_data: {
+    source: string
+    citation: string
+    license: string
+    rows_used: number
+    notes: string
+  }
+  target: string
+  features: { name: string; description: string }[]
+  excluded_features: { name: string; reason: string }[]
+  model: { type: string; selection: string; train_rows: number }
+  test_metrics: Metrics
+  test_metrics_survey_like_rows: Metrics & { description: string }
+  performance_by_group: Record<string, Record<string, Metrics>>
+  synthetic_data_effects: string[]
+  limitations: string[]
+}

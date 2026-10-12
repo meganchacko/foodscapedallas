@@ -281,6 +281,127 @@ select {
   margin: 0;
 }
 
+.page {
+  overflow-y: auto;
+  padding: 24px 32px 48px;
+}
+
+.health-form,
+.health-result,
+.model-card {
+  max-width: 640px;
+}
+
+.question {
+  margin-bottom: 18px;
+}
+
+.question legend {
+  font-weight: 600;
+}
+
+.choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  margin-top: 4px;
+}
+
+.choice {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.age-input {
+  width: 6em;
+  padding: 6px 8px;
+  font: inherit;
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+}
+
+.save-option {
+  align-items: flex-start;
+  margin: 20px 0 12px;
+}
+
+button.primary,
+button.secondary {
+  padding: 9px 18px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+button.primary {
+  border: none;
+  background: var(--text-primary);
+  color: var(--surface);
+}
+
+button.secondary {
+  margin-top: 12px;
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+}
+
+.likelihood {
+  margin: 0;
+  font-size: 2.5rem;
+  font-weight: 700;
+}
+
+.factors {
+  list-style: none;
+  padding: 0;
+}
+
+.factors li {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 0;
+  border-top: 1px solid var(--border);
+}
+
+.factor-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.factor-arrow {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.badge {
+  padding: 1px 7px;
+  border-radius: 10px;
+  background: var(--hover);
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.metrics {
+  width: 100%;
+  margin: 8px 0 12px;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+.metrics th,
+.metrics td {
+  padding: 5px 8px;
+  border-bottom: 1px solid var(--border);
+  text-align: right;
+}
+
+.metrics th:first-child {
+  text-align: left;
+}
+
 /* Phones: map on top, controls underneath */
 @media (max-width: 760px) {
   .layout {
@@ -292,6 +413,10 @@ select {
   .map-area {
     order: -1;
     height: 60vh;
+  }
+
+  .page {
+    padding: 16px;
   }
 
   .sidebar {

@@ -1,5 +1,8 @@
 import type {
   GeocodeResult,
+  HealthCheckAnswers,
+  HealthCheckResult,
+  ModelCard,
   NearbyResponse,
   PlaceCollection,
   TractCollection,
@@ -18,11 +21,23 @@ export class ApiError extends Error {
 // "/api" is forwarded to the backend by the Vite dev server proxy (see vite.config.ts)
 async function getJson<T>(path: string, params?: Record<string, string>): Promise<T> {
   const query = params ? `?${new URLSearchParams(params)}` : ''
-  const response = await fetch(`/api${path}${query}`)
+  return readJson<T>(await fetch(`/api${path}${query}`), path)
+}
+
+async function postJson<T>(path: string, body: unknown): Promise<T> {
+  const response = await fetch(`/api${path}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+  return readJson<T>(response, path)
+}
+
+async function readJson<T>(response: Response, path: string): Promise<T> {
   if (!response.ok) {
     const body = await response.json().catch(() => null)
     const detail = typeof body?.detail === 'string' ? body.detail : 'Something went wrong.'
-    throw new ApiError(response.status, detail)
+    throw new ApiError(response.status, detail || `${path} failed`)
   }
   return response.json() as Promise<T>
 }
@@ -51,4 +66,20 @@ export function fetchNearby(
     radius: String(radiusMiles),
     snap: String(snapOnly),
   })
+}
+
+export function checkHealth(
+  answers: HealthCheckAnswers,
+  save: boolean,
+  anonymousId: string | null,
+): Promise<HealthCheckResult> {
+  return postJson<HealthCheckResult>('/health-check', {
+    ...answers,
+    save,
+    anonymous_id: save ? anonymousId : null,
+  })
+}
+
+export function fetchModelCard(): Promise<ModelCard> {
+  return getJson<ModelCard>('/model-card')
 }

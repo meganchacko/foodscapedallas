@@ -2,8 +2,10 @@ import { useEffect, useMemo, useState } from 'react'
 import { Pane } from 'react-leaflet'
 import { fetchPlaces, fetchTracts } from './api'
 import { Controls } from './components/Controls'
+import { HealthCheckView } from './components/HealthCheckView'
 import { Legend } from './components/Legend'
 import { MapView } from './components/MapView'
+import { ModelCardView } from './components/ModelCardView'
 import { NearbyLayer } from './components/NearbyLayer'
 import { NearbyPanel } from './components/NearbyPanel'
 import { PlaceLayer } from './components/PlaceLayer'
@@ -23,6 +25,7 @@ import './App.css'
 
 function App() {
   const [view, setView] = useState<View>('explore')
+  const [showModelCard, setShowModelCard] = useState(false)
   const nearbySearch = useNearbySearch()
   const [tracts, setTracts] = useState<TractCollection | null>(null)
   const [loadError, setLoadError] = useState(false)
@@ -60,6 +63,12 @@ function App() {
   const selectedTract =
     tracts?.features.find((f) => f.properties.geoid === selectedGeoid)?.properties ?? null
 
+  // From the health check: show only that kind of place in Find food near me
+  function findPlaces(type: PlaceType) {
+    nearbySearch.showOnlyType(type)
+    setView('nearby')
+  }
+
   function togglePlaceType(type: PlaceType) {
     setVisiblePlaceTypes((current) => {
       const next = new Set(current) // copy: React only re-renders when state is a new object
@@ -77,7 +86,9 @@ function App() {
           <p className="subtitle">Food access and health across Dallas County</p>
         </header>
         <ViewTabs view={view} onChange={setView} />
-        {view === 'nearby' ? (
+        {view === 'health' ? (
+          <HealthSidebar onShowModelCard={() => setShowModelCard(true)} />
+        ) : view === 'nearby' ? (
           <NearbyPanel search={nearbySearch} />
         ) : (
           <>
@@ -113,28 +124,60 @@ function App() {
           </>
         )}
       </aside>
-      <main className="map-area">
-        <MapView>
-          {view === 'explore' && tracts && (
-            <TractLayer
-              tracts={tracts}
-              layerKind={layerKind}
-              measure={measure}
-              showPriority={showPriority}
-              selectedGeoid={selectedGeoid}
-              onSelect={setSelectedGeoid}
+      {view === 'health' ? (
+        <main className="page">
+          {/* The health check stays mounted (just hidden) while the model card is open, so its
+              answers and result are still there when the user comes back */}
+          <div hidden={showModelCard}>
+            <HealthCheckView
+              onFindPlaces={findPlaces}
+              onShowModelCard={() => setShowModelCard(true)}
             />
-          )}
-          {/* Pins get their own pane (layer) above the tracts, so tract outlines never cover them */}
-          <Pane name="places" style={{ zIndex: 450 }}>
-            {view === 'explore' && places && (
-              <PlaceLayer places={places} visibleTypes={visiblePlaceTypes} />
+          </div>
+          {showModelCard && <ModelCardView onBack={() => setShowModelCard(false)} />}
+        </main>
+      ) : (
+        <main className="map-area">
+          <MapView>
+            {view === 'explore' && tracts && (
+              <TractLayer
+                tracts={tracts}
+                layerKind={layerKind}
+                measure={measure}
+                showPriority={showPriority}
+                selectedGeoid={selectedGeoid}
+                onSelect={setSelectedGeoid}
+              />
             )}
-            {view === 'nearby' && <NearbyLayer search={nearbySearch} />}
-          </Pane>
-        </MapView>
-      </main>
+            {/* Pins get their own pane (layer) above the tracts, so tract outlines never cover them */}
+            <Pane name="places" style={{ zIndex: 450 }}>
+              {view === 'explore' && places && (
+                <PlaceLayer places={places} visibleTypes={visiblePlaceTypes} />
+              )}
+              {view === 'nearby' && <NearbyLayer search={nearbySearch} />}
+            </Pane>
+          </MapView>
+        </main>
+      )}
     </div>
+  )
+}
+
+function HealthSidebar({ onShowModelCard }: { onShowModelCard: () => void }) {
+  return (
+    <section>
+      <p>
+        A short, private questionnaire about everyday habits. It estimates how likely obesity was
+        for people who answered the same way in a survey, and shows which answers mattered.
+      </p>
+      <p className="hint">
+        Nothing is saved unless you choose to. It doesn't ask for your height, weight, name, or
+        location.
+      </p>
+      <button type="button" className="link-button" onClick={onShowModelCard}>
+        How the model works (model card)
+      </button>
+    </section>
   )
 }
 
