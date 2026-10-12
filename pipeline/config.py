@@ -1,6 +1,7 @@
 from functools import lru_cache
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from sqlalchemy import URL
 
 
 class PipelineSettings(BaseSettings):
@@ -17,6 +18,9 @@ class PipelineSettings(BaseSettings):
     postgres_db: str
     postgres_host: str = "localhost"
     postgres_port: int = 5432
+    # "require" in production: the cloud database only accepts encrypted (TLS) connections.
+    # "prefer" locally: use encryption if the server offers it (the Docker database doesn't).
+    postgres_sslmode: str = "prefer"
 
     # Redis, so the pipeline can clear the API's cached map data after loading
     redis_host: str = "localhost"
@@ -27,10 +31,18 @@ class PipelineSettings(BaseSettings):
 
     @property
     def database_url(self) -> str:
-        return (
-            f"postgresql+psycopg://{self.postgres_user}:{self.postgres_password}"
-            f"@{self.postgres_host}:{self.postgres_port}/{self.postgres_db}"
-        )
+        # URL.create escapes special characters in the password (generated passwords often have
+        # them, and an unescaped "@" or "/" would break the URL). "postgresql+psycopg" tells
+        # SQLAlchemy to use the psycopg (v3) driver.
+        return URL.create(
+            "postgresql+psycopg",
+            username=self.postgres_user,
+            password=self.postgres_password,
+            host=self.postgres_host,
+            port=self.postgres_port,
+            database=self.postgres_db,
+            query={"sslmode": self.postgres_sslmode},
+        ).render_as_string(hide_password=False)
 
 
 @lru_cache

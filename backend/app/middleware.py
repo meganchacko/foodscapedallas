@@ -5,7 +5,8 @@ import re
 import time
 import uuid
 
-from fastapi import Request, Response
+from fastapi import FastAPI, Request, Response
+from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.base import RequestResponseEndpoint
 
 logger = logging.getLogger("app.requests")
@@ -47,3 +48,19 @@ async def observe_request(request: Request, call_next: RequestResponseEndpoint) 
     # Returning the ID lets someone report a problem with an ID we can find in the logs
     response.headers["X-Request-ID"] = request_id
     return response
+
+
+def configure_cors(app: FastAPI, allowed_origins: list[str]) -> None:
+    """CORS: browsers block a page on one site from reading responses from another unless the
+    server allows it. In production the frontend and API have different addresses, so allow
+    exactly the frontend's (ALLOWED_ORIGINS). Locally the Vite proxy makes calls same-origin,
+    so the list is empty.
+    """
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=allowed_origins,
+        allow_methods=["GET", "POST"],
+        allow_headers=["Content-Type", "X-Request-ID"],
+        # let the frontend read these response headers (browsers hide most of them cross-origin)
+        expose_headers=["X-Cache", "X-Request-ID", "Retry-After", "Server-Timing"],
+    )
