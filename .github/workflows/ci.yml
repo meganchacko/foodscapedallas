@@ -85,4 +85,5 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - run: docker build -f backend/Dockerfile -t foodscape-backend .
+      - run: docker build -f pipeline/Dockerfile -t foodscape-pipeline .
       - run: docker build -t foodscape-frontend ./frontend

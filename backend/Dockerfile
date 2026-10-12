@@ -16,5 +16,13 @@ COPY ml/model ./model
 # Where the app loads the health check model from (see app/config.py)
 ENV MODEL_DIR=/app/model
 
+# Run as a regular user, not root: if the app were ever compromised, the attacker wouldn't have
+# root inside the container
+RUN useradd --create-home --uid 1000 app
+USER app
+
 EXPOSE 8000
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Production: 2 worker processes (rate limits stay correct across them because the counts live
+# in Redis). Migrations are not run here; they run as a separate step before a new version
+# starts. docker-compose.yml overrides this for development (auto-reload, migrations first).
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2"]
