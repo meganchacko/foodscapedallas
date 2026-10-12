@@ -8,7 +8,7 @@ FoodScape Dallas is a website that maps food access in Dallas County. It helps c
 backend/              FastAPI app (Python 3.12)
 frontend/             React + TypeScript app (Vite)
 pipeline/             data loaders for USDA, CDC, Census, OpenStreetMap, pantries
-ml/                   obesity model for the health check (ml/v1_linear_regression/ is the original version)
+ml/                   health check model: training script, data, saved model, model card (v1_linear_regression/ is the original)
 docker-compose.yml    local stack: PostGIS, Redis, backend, frontend
 .github/workflows/    CI: lint, backend tests, frontend build, Docker builds
 ```
@@ -41,6 +41,8 @@ The map needs data: run the pipeline once (see [Loading the data](#loading-the-d
 | `GET /tracts` | Every tract as GeoJSON: population, obesity %, both food access definitions, priority area flags, distance to the nearest grocery store. Cached in Redis; the pipeline clears the cache after loading |
 | `GET /places?type=` | Grocery stores, pantries, and farmers markets as GeoJSON points; `type` is optional |
 | `GET /places/nearby?lat=&lng=&radius=&type=&snap=` | Places within `radius` miles (default 1, max 10), closest first, plus whether the point is in Dallas County and in a low-access tract |
+| `POST /health-check` | The health check: an estimated likelihood (0-1), the answers that moved it most, an optional resource suggestion, and caveats. Stores nothing unless `save` is true |
+| `GET /model-card` | How the health check model was built, how well it works overall and by group, and its limitations |
 | `GET /geocode?q=` | Coordinates for an address or place name near Dallas (Nominatim). Cached in Redis for 30 days and limited to 1 request per second, per Nominatim's usage policy |
 
 Interactive docs: http://localhost:8000/docs
@@ -88,6 +90,14 @@ alembic -c backend/alembic.ini check                              # confirm the 
 ```
 
 `.env` holds local settings and secrets and is never committed. Keep `.env.example` up to date when adding settings.
+
+### Health check
+
+- A short questionnaire about habits (no height, weight, name, or location). Returns an estimated likelihood of obesity among people with similar answers in the survey data, and which answers moved it, described as patterns in the data, not causes.
+- Not medical advice, and says so on every screen. Men and people over 61 get a note that the estimate is less reliable for them.
+- When a changeable habit is the top factor *and* the healthier answer would lower the estimate, it suggests nearby grocery stores or farmers markets, linking to Find food near me.
+- Answers are saved only if the user opts in, with a random ID generated in their browser.
+- A model card page explains the model, its accuracy by group, and its limits. See `ml/README.md`.
 
 ## Loading the data
 
