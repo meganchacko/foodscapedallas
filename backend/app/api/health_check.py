@@ -6,13 +6,18 @@ from sqlalchemy import Engine, insert
 
 from app.db.database import get_engine
 from app.db.models import HealthCheck
+from app.rate_limit import RateLimit
 from app.schemas.health_check import HealthCheckRequest, HealthCheckResponse
 from app.services.health_check import HealthModel, get_health_model, get_model_card
 
 router = APIRouter()
 
 
-@router.post("/health-check", response_model=HealthCheckResponse)
+@router.post(
+    "/health-check",
+    response_model=HealthCheckResponse,
+    dependencies=[Depends(RateLimit("health_check", per_minute=20))],
+)
 def health_check(
     request: HealthCheckRequest,
     model: Annotated[HealthModel, Depends(get_health_model)],

@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy import Engine
 
 from app.db.database import get_engine
+from app.rate_limit import RateLimit
 from app.schemas.nearby import NearbyResponse
 from app.schemas.places import PlaceCollection, PlaceType
 from app.services.nearby import find_nearby
@@ -12,7 +13,11 @@ from app.services.places import get_place_collection
 router = APIRouter()
 
 
-@router.get("/places", response_model=PlaceCollection)
+@router.get(
+    "/places",
+    response_model=PlaceCollection,
+    dependencies=[Depends(RateLimit("places", per_minute=60))],
+)
 def list_places(
     engine: Annotated[Engine, Depends(get_engine)],
     place_type: Annotated[PlaceType | None, Query(alias="type")] = None,
@@ -24,7 +29,11 @@ def list_places(
     return get_place_collection(engine, place_type)
 
 
-@router.get("/places/nearby", response_model=NearbyResponse)
+@router.get(
+    "/places/nearby",
+    response_model=NearbyResponse,
+    dependencies=[Depends(RateLimit("nearby", per_minute=60))],
+)
 def list_nearby_places(
     engine: Annotated[Engine, Depends(get_engine)],
     lat: Annotated[float, Query(ge=-90, le=90)],

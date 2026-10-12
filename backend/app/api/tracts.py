@@ -6,6 +6,7 @@ from sqlalchemy import Engine
 
 from app.cache import get_cached, get_redis, set_cached
 from app.db.database import get_engine
+from app.rate_limit import RateLimit
 from app.schemas.tracts import TractCollection
 from app.services.tracts import get_tract_collection
 
@@ -18,7 +19,11 @@ TRACTS_CACHE_KEY = "tracts:v1"
 CACHE_TTL_SECONDS = 24 * 60 * 60
 
 
-@router.get("/tracts", response_model=TractCollection)
+@router.get(
+    "/tracts",
+    response_model=TractCollection,
+    dependencies=[Depends(RateLimit("tracts", per_minute=60))],
+)
 def list_tracts(
     engine: Annotated[Engine, Depends(get_engine)],
     cache: Annotated[Redis, Depends(get_redis)],

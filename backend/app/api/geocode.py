@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from redis import Redis
 
 from app.cache import get_redis
+from app.rate_limit import RateLimit
 from app.schemas.geocode import GeocodeResponse
 from app.services.geocoding import GeocoderUnavailable, NominatimGeocoder
 
@@ -14,7 +15,12 @@ def get_geocoder(cache: Annotated[Redis, Depends(get_redis)]) -> NominatimGeocod
     return NominatimGeocoder(cache)
 
 
-@router.get("/geocode", response_model=GeocodeResponse)
+@router.get(
+    "/geocode",
+    response_model=GeocodeResponse,
+    # protects Nominatim, which allows us 1 request per second in total
+    dependencies=[Depends(RateLimit("geocode", per_minute=30))],
+)
 def geocode(
     q: Annotated[str, Query(min_length=3, max_length=200, description="Address or place name")],
     geocoder: Annotated[NominatimGeocoder, Depends(get_geocoder)],

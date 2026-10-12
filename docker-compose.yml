@@ -42,6 +42,9 @@ services:
       POSTGRES_PORT: 5432
       REDIS_HOST: redis
       REDIS_PORT: 6379
+      # Trust X-Forwarded-For (the real client IP, used for rate limiting) only from the Docker
+      # network, where the Vite proxy runs. Production sets its load balancer's addresses.
+      FORWARDED_ALLOW_IPS: 172.16.0.0/12
     ports:
       - "8000:8000"
     volumes:

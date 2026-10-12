@@ -16,6 +16,9 @@ export default defineConfig({
       '/api': {
         target: apiTarget,
         changeOrigin: true,
+        // send the browser's IP in X-Forwarded-For, so the API's rate limiter sees each user
+        // instead of seeing every request as coming from this proxy
+        xfwd: true,
         rewrite: (path) => path.replace(/^\/api/, ''),
       },
     },

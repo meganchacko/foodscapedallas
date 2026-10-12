@@ -82,3 +82,10 @@ def test_redis() -> Iterator[Redis]:
     yield cache
     cache.flushdb()
     cache.close()
+
+
+@pytest.fixture(autouse=True)
+def rate_limits_off_by_default(monkeypatch):
+    """Tests send many requests from one client, so rate limiting is off unless a test turns
+    it on (see backend/tests/test_rate_limit.py)."""
+    monkeypatch.setattr(get_settings(), "rate_limit_enabled", False)

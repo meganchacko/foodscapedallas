@@ -21,6 +21,9 @@ class Settings(BaseSettings):
     redis_host: str = "localhost"
     redis_port: int = 6379
 
+    # Turned off for load tests (one machine sends every request) and in the test suite
+    rate_limit_enabled: bool = True
+
     # The trained health check model. Locally that's ml/model/ in the repo; the Docker image
     # sets MODEL_DIR=/app/model.
     model_dir: Path = Path(__file__).resolve().parents[2] / "ml" / "model"
