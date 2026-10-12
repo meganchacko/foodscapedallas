@@ -1,0 +1,245 @@
+{
+  "name": "FoodScape Dallas health check model",
+  "model_version": "2.0",
+  "trained_on": "2026-10-11",
+  "scikit_learn_version": "1.9.1",
+  "intended_use": "A personal, educational estimate in the FoodScape Dallas health check: how likely someone with similar answers was to have obesity in the survey data, and which answers moved that estimate.",
+  "not_intended_for": [
+    "Diagnosis or medical decisions. It is not medical advice.",
+    "Estimating obesity rates for places. The map uses CDC PLACES for that.",
+    "Decisions about other people (insurance, hiring, eligibility, and so on)."
+  ],
+  "training_data": {
+    "source": "UCI Machine Learning Repository: Estimation of Obesity Levels Based On Eating Habits and Physical Condition",
+    "citation": "https://doi.org/10.24432/C5H31Z",
+    "license": "CC BY 4.0",
+    "rows_used": 2087,
+    "countries": [
+      "Mexico",
+      "Peru",
+      "Colombia"
+    ],
+    "synthetic_share": 0.77,
+    "notes": "77% of rows were generated with SMOTE to balance the classes; 23% are survey responses. 24 exact duplicate rows were removed."
+  },
+  "target": "1 if the person's obesity level is Obesity Type I, II, or III (assigned from BMI of 30 or more), otherwise 0",
+  "features": [
+    {
+      "name": "Gender",
+      "description": "Sex (female / male)"
+    },
+    {
+      "name": "family_history_with_overweight",
+      "description": "A family member is or was overweight"
+    },
+    {
+      "name": "FAVC",
+      "description": "Often eats high-calorie food"
+    },
+    {
+      "name": "CAEC",
+      "description": "Eats between meals (no / sometimes / frequently / always)"
+    },
+    {
+      "name": "SMOKE",
+      "description": "Smokes"
+    },
+    {
+      "name": "SCC",
+      "description": "Tracks calories"
+    },
+    {
+      "name": "CALC",
+      "description": "Drinks alcohol (no / sometimes / frequently / always)"
+    },
+    {
+      "name": "MTRANS",
+      "description": "Usual transportation"
+    },
+    {
+      "name": "Age",
+      "description": "Age in years"
+    },
+    {
+      "name": "FCVC",
+      "description": "How often meals include vegetables (never / sometimes / always)"
+    },
+    {
+      "name": "NCP",
+      "description": "Main meals per day (1-4)"
+    },
+    {
+      "name": "CH2O",
+      "description": "Water per day (under 1 L / 1-2 L / over 2 L)"
+    },
+    {
+      "name": "FAF",
+      "description": "Physical activity (none / 1-2 / 2-4 / 4-5 days a week)"
+    },
+    {
+      "name": "TUE",
+      "description": "Screen time per day (0-2 / 3-5 / over 5 hours)"
+    }
+  ],
+  "excluded_features": [
+    {
+      "name": "Height",
+      "reason": "The label was assigned from BMI (weight / height squared), so these would leak the answer."
+    },
+    {
+      "name": "Weight",
+      "reason": "The label was assigned from BMI (weight / height squared), so these would leak the answer."
+    }
+  ],
+  "model": {
+    "type": "Logistic regression (scikit-learn), with one-hot encoding and scaling",
+    "regularization_C": 10.0,
+    "selection": "C chosen from [0.01, 0.1, 1.0, 10.0, 100.0] by 5-fold cross-validation on the training set (ROC AUC 0.865)",
+    "train_rows": 1669
+  },
+  "test_metrics": {
+    "n": 418,
+    "obese_share": 0.467,
+    "accuracy": 0.768,
+    "precision": 0.709,
+    "recall": 0.851,
+    "brier_score": 0.152,
+    "roc_auc": 0.855,
+    "baseline_accuracy": 0.533
+  },
+  "test_metrics_survey_like_rows": {
+    "description": "The same test set, limited to rows whose answers are all whole numbers, which is what real survey responses look like (most synthetic rows have fractional answers). Closer to how the model does for real people. Small, so noisy.",
+    "n": 90,
+    "obese_share": 0.133,
+    "accuracy": 0.789,
+    "precision": 0.231,
+    "recall": 0.25,
+    "brier_score": 0.152,
+    "roc_auc": 0.689,
+    "baseline_accuracy": 0.867,
+    "mean_predicted": 0.161
+  },
+  "calibration": [
+    {
+      "mean_predicted": 0.012,
+      "actual_share": 0.036
+    },
+    {
+      "mean_predicted": 0.189,
+      "actual_share": 0.169
+    },
+    {
+      "mean_predicted": 0.558,
+      "actual_share": 0.56
+    },
+    {
+      "mean_predicted": 0.713,
+      "actual_share": 0.699
+    },
+    {
+      "mean_predicted": 0.84,
+      "actual_share": 0.869
+    }
+  ],
+  "performance_by_group": {
+    "sex": {
+      "Female": {
+        "n": 213,
+        "obese_share": 0.465,
+        "accuracy": 0.887,
+        "precision": 0.85,
+        "recall": 0.919,
+        "brier_score": 0.085,
+        "roc_auc": 0.957
+      },
+      "Male": {
+        "n": 205,
+        "obese_share": 0.468,
+        "accuracy": 0.644,
+        "precision": 0.591,
+        "recall": 0.781,
+        "brier_score": 0.221,
+        "roc_auc": 0.695
+      }
+    },
+    "age_band": {
+      "14-19": {
+        "n": 113,
+        "obese_share": 0.212,
+        "accuracy": 0.788,
+        "precision": 0.5,
+        "recall": 0.5,
+        "brier_score": 0.131,
+        "roc_auc": 0.823
+      },
+      "20-29": {
+        "n": 229,
+        "obese_share": 0.559,
+        "accuracy": 0.79,
+        "precision": 0.76,
+        "recall": 0.914,
+        "brier_score": 0.14,
+        "roc_auc": 0.868
+      },
+      "30-39": {
+        "n": 68,
+        "obese_share": 0.544,
+        "accuracy": 0.647,
+        "precision": 0.633,
+        "recall": 0.838,
+        "brier_score": 0.23,
+        "roc_auc": 0.688
+      },
+      "40+": {
+        "n": 8,
+        "obese_share": 0.75,
+        "accuracy": 0.875,
+        "precision": 0.857,
+        "recall": 1.0,
+        "brier_score": 0.119,
+        "roc_auc": 0.75
+      }
+    }
+  },
+  "coefficients": {
+    "categories__Gender_Male": 0.053,
+    "categories__family_history_with_overweight_yes": 3.396,
+    "categories__FAVC_yes": 2.277,
+    "categories__CAEC_no": -0.662,
+    "categories__CAEC_Sometimes": 1.881,
+    "categories__CAEC_Frequently": -1.707,
+    "categories__CAEC_Always": 0.58,
+    "categories__SMOKE_yes": 0.768,
+    "categories__SCC_yes": -2.265,
+    "categories__CALC_no": 0.193,
+    "categories__CALC_Sometimes": 0.402,
+    "categories__CALC_Frequently": -0.503,
+    "categories__CALC_Always": 0.0,
+    "categories__MTRANS_Automobile": -0.668,
+    "categories__MTRANS_Bike": -0.033,
+    "categories__MTRANS_Motorbike": 1.423,
+    "categories__MTRANS_Public_Transportation": 0.714,
+    "categories__MTRANS_Walking": -1.345,
+    "numbers__Age": 0.576,
+    "numbers__FCVC": 0.48,
+    "numbers__NCP": 0.064,
+    "numbers__CH2O": 0.117,
+    "numbers__FAF": -0.207,
+    "numbers__TUE": -0.101
+  },
+  "synthetic_data_effects": [
+    "The most severe class (Obesity Type III) is 323 women and 1 man, and all 324 rows answer 'always' to the vegetables question, are aged 18-26, and share 3 answer patterns: hundreds of generated copies of a few people.",
+    "As a result the model is much more accurate for women (ROC AUC 0.957) than for men (ROC AUC 0.695). Much of the women's score comes from recognizing that generated cluster, not from real patterns.",
+    "It also learned that eating vegetables more often raises the estimate (coefficient +0.48). That reflects the generated cluster, not health evidence, so the health check never presents it as advice.",
+    "On test rows that look like real survey responses (n=90), ROC AUC is 0.689, compared with 0.855 on the full test set.",
+    "Estimates run high for typical people: about 46% of training rows are obese, but only 13% of the survey-like test rows are, while the model's average estimate for them is 16%."
+  ],
+  "limitations": [
+    "77% of the training data is synthetic (see synthetic_data_effects), and the real responses come from Mexico, Peru, and Colombia, not Dallas. Patterns may not carry over.",
+    "The estimate is less accurate for men than for women.",
+    "Respondents are young: the median age is about 23, and 95% are under 38. Estimates for older adults are less reliable, and there were no respondents over 61.",
+    "Answers are self-reported, and the label comes from self-reported height and weight.",
+    "The model finds associations, not causes. A factor that raises the estimate isn't necessarily something that causes obesity.",
+    "BMI-based obesity is a population screening measure and doesn't describe any one person's health."
+  ]
+}
