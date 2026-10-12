@@ -1,0 +1,67 @@
+# The API container app. deploy.sh fills in the ${...} values and creates or updates the app.
+# Two containers share each replica: the FastAPI app and a Redis "sidecar" it reaches at
+# localhost. Redis only holds disposable data (map cache, geocode cache, rate-limit counts), so
+# it doesn't need its own always-on service: it starts and stops with the API, which scales to
+# zero when nobody is using the site.
+location: ${LOCATION}
+identity:
+  type: UserAssigned
+  userAssignedIdentities:
+    ${IDENTITY_ID}: {}
+properties:
+  managedEnvironmentId: ${ENVIRONMENT_ID}
+  configuration:
+    activeRevisionsMode: Single
+    ingress:
+      external: true
+      targetPort: 8000
+      allowInsecure: false # HTTPS only
+    secrets:
+      # Read from Key Vault through the managed identity; never stored in this file
+      - name: postgres-password
+        keyVaultUrl: ${KEY_VAULT_URI}/postgres-password
+        identity: ${IDENTITY_ID}
+  template:
+    containers:
+      - name: api
+        image: ${BACKEND_IMAGE_REF}
+        resources:
+          cpu: 0.5
+          memory: 1Gi
+        env:
+          - name: POSTGRES_HOST
+            value: ${DB_HOST}
+          - name: POSTGRES_DB
+            value: ${DB_NAME}
+          - name: POSTGRES_USER
+            value: ${DB_ADMIN}
+          - name: POSTGRES_PASSWORD
+            secretRef: postgres-password
+          - name: POSTGRES_SSLMODE
+            value: require
+          - name: REDIS_HOST
+            value: localhost
+          - name: ALLOWED_ORIGINS
+            value: ${FRONTEND_URL}
+          # Only Azure's front door (ingress) can reach the container, so trust the client IP
+          # it forwards in X-Forwarded-For (used for rate limiting)
+          - name: FORWARDED_ALLOW_IPS
+            value: "*"
+        probes:
+          - type: Readiness
+            httpGet:
+              path: /health
+              port: 8000
+            periodSeconds: 10
+      - name: redis
+        image: docker.io/library/redis:7
+        resources:
+          cpu: 0.25
+          memory: 0.5Gi
+        # A cache: don't save to disk
+        args: ["--save", "", "--appendonly", "no"]
+    scale:
+      minReplicas: 0 # scale to zero when idle (the first request after a while takes a few seconds)
+      # One replica: each has its own Redis, so more replicas would split the rate-limit counts.
+      # To scale out, move Redis to a shared service.
+      maxReplicas: 1
