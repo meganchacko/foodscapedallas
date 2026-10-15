@@ -2,25 +2,6 @@
 
 FoodScape Dallas is a website that maps food access in Dallas County. It helps city planners find food deserts and test where a new grocery store would help most, and helps residents find food near them and get there. The map uses public tract-level data (USDA Food Access Research Atlas, CDC PLACES), and a separate personal health check uses a model trained on the UCI obesity dataset.
 
-## Repo layout
-
-```
-backend/              FastAPI app (Python 3.12)
-frontend/             React + TypeScript app (Vite)
-pipeline/             data loaders for USDA, CDC, Census, OpenStreetMap, pantries
-ml/                   health check model: training script, data, saved model, model card (v1_linear_regression/ is the original)
-scripts/              spatial index benchmark
-loadtest/             Locust load test
-docs/                 hardening summary, benchmark and load test results
-deploy/               Azure setup, deploy, and teardown scripts (see deploy/README.md)
-docker-compose.yml    local stack: PostGIS, Redis, backend, frontend
-.github/workflows/    CI: lint, backend tests, frontend build, Docker builds
-```
-
-## Live site
-
-Deployed on Azure: Container Apps (API + Redis sidecar, scales to zero), PostgreSQL Flexible Server with PostGIS, Static Web Apps (frontend), Key Vault (secrets), and a weekly scheduled job that reloads the data. Every push to `main` that passes CI deploys automatically. See [`deploy/README.md`](deploy/README.md).
-
 ## Running the app
 
 Requires [Docker Desktop](https://www.docker.com/products/docker-desktop/).
@@ -40,24 +21,6 @@ docker compose up --build
 Stop with `docker compose down`. Add `-v` to also delete the database volume.
 
 The map needs data: run the pipeline once (see [Loading the data](#loading-the-data)). For the map's gray background without a watermark, add a free CARTO key to `.env` as `CARTO_API_KEY` (https://carto.com/basemaps/apikey) and restart the frontend.
-
-### Performance, reliability, and privacy
-
-See [`docs/hardening.md`](docs/hardening.md): caching (`X-Cache`), timing (`Server-Timing`), rate limiting (`429`), JSON request logs with request IDs, the spatial index benchmark, and the load test, each with how to see it and the measured numbers.
-
-### API
-
-| Endpoint | Returns |
-| --- | --- |
-| `GET /health` | Whether the API, database, and cache are up (200 or 503) |
-| `GET /tracts` | Every tract as GeoJSON: population, obesity %, both food access definitions, priority area flags, distance to the nearest grocery store. Cached in Redis; the pipeline clears the cache after loading |
-| `GET /places?type=` | Grocery stores, pantries, and farmers markets as GeoJSON points; `type` is optional |
-| `GET /places/nearby?lat=&lng=&radius=&type=&snap=` | Places within `radius` miles (default 1, max 10), closest first, plus whether the point is in Dallas County and in a low-access tract |
-| `POST /health-check` | The health check: an estimated likelihood (0-1), the answers that moved it most, an optional resource suggestion, and caveats. Stores nothing unless `save` is true |
-| `GET /model-card` | How the health check model was built, how well it works overall and by group, and its limitations |
-| `GET /geocode?q=` | Coordinates for an address or place name near Dallas (Nominatim). Cached in Redis for 30 days and limited to 1 request per second, per Nominatim's usage policy |
-
-Interactive docs: http://localhost:8000/docs
 
 ### The map
 
@@ -91,18 +54,6 @@ ruff check . && ruff format --check .
 
 Frontend (from `frontend/`): `npm test` (Vitest), `npm run lint`, `npm run build`. See `frontend/README.md`.
 
-### Database migrations
-
-The schema is managed with Alembic (`backend/alembic/versions/`). The backend container runs `alembic upgrade head` on startup, so `docker compose up` always has the latest schema. Tests run against a separate `foodscape_test` database that they create and drop themselves.
-
-```bash
-alembic -c backend/alembic.ini upgrade head                       # apply migrations to the dev database
-alembic -c backend/alembic.ini revision --autogenerate -m "..."   # draft a migration after changing app/db/models.py
-alembic -c backend/alembic.ini check                              # confirm the models and migrations match
-```
-
-`.env` holds local settings and secrets and is never committed. Keep `.env.example` up to date when adding settings.
-
 ### Health check
 
 - A short questionnaire about habits (no height, weight, name, or location). Returns an estimated likelihood of obesity among people with similar answers in the survey data, and which answers moved it, described as patterns in the data, not causes.
@@ -134,28 +85,6 @@ It needs a free Census API key in `.env` (`CENSUS_API_KEY`, sign up at https://a
 | Adult obesity | CDC PLACES 2025 release | Modeled estimates, not diagnoses |
 | Grocery stores, farmers markets | OpenStreetMap (Overpass API) | Supermarkets and greengrocers; marketplaces with "farmers" in the name |
 | Food pantries | Hand-entered from the North Texas Food Bank pantry finder | `pipeline/seeds/pantries.csv` |
-| SNAP acceptance, SNAP farmers markets | USDA SNAP Retailer Locator data (stores authorized 2005–2025) | Current authorizations only; see matching note below |
+| SNAP acceptance, SNAP farmers markets | USDA SNAP Retailer Locator data (stores authorized 2005–2025) | Current authorizations only |
 
 Both food access definitions use the standard low-access threshold: more than 1 mile from a store in urban areas, 10 miles in rural areas, measured in a straight line.
-
-### Known limitations
-
-- **The 2019 food access data is on 2010 tract boundaries.** The pipeline translates it to 2020 tracts using the Census 2020-to-2010 tract relationship file. Flags come from the 2010 tract covering most of a 2020 tract's land; low-access population is split by land area, which assumes people are spread evenly. 565 of 645 Dallas tracts sit at least 99% inside a single 2010 tract, and only 6 straddle 2010 tracts that disagree on the food-desert flag.
-- **The 2019 data reflects stores as of 2019.** Supermarkets that opened or closed since then aren't counted.
-- **The two definitions give very different maps.** Under the 2019 supermarket definition, 111 Dallas tracts are low-income and low-access; under the 2025 any-SNAP-store definition, 6 are. Neither is wrong; they answer different questions.
-- **Two tracts have no data** (48113980000, 48113980100): unpopulated special-use areas.
-- **OpenStreetMap is volunteer-mapped.** Grocery coverage in Dallas is good but not complete, and a few non-grocery businesses are mis-tagged as supermarkets.
-- **SNAP acceptance is matched, not exact.** An OpenStreetMap grocery store is marked as accepting SNAP when a currently authorized SNAP store with a similar name is within 250 m (242 of 290 matched). Unmatched stores show SNAP as unknown, not "no". WIC acceptance has no open dataset and is always unknown.
-
-## Running the original model (v1)
-
-The first version of the model: linear regression on the 0–6 obesity level. It's kept to show how the model changed; the health check uses the newer model in `ml/`.
-
-```bash
-pip install -r ml/v1_linear_regression/requirements.txt
-cd ml/v1_linear_regression
-python part1.py   # linear regression via gradient descent in numpy
-python part2.py   # linear regression via scikit-learn's SGDRegressor
-```
-
-Logs and plots are written to `logs/` and `plots/` in that folder. See `ml/v1_linear_regression/README.md`.
