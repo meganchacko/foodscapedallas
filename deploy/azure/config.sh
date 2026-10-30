@@ -2,7 +2,9 @@
 # Names that must be unique across all of Azure get a short suffix derived from the
 # subscription ID, so they're stable between runs.
 
-LOCATION="${LOCATION:-southcentralus}"          # Texas: closest region to Dallas
+# Central US (Iowa): South Central US (Texas) is closer to Dallas, but free-trial subscriptions
+# can't create PostgreSQL servers there
+LOCATION="${LOCATION:-centralus}"
 STATIC_WEB_LOCATION="${STATIC_WEB_LOCATION:-centralus}"  # Static Web Apps has fewer regions
 RESOURCE_GROUP="${RESOURCE_GROUP:-foodscape-rg}"
 GITHUB_REPO="${GITHUB_REPO:-meganchacko/foodscapedallas}"

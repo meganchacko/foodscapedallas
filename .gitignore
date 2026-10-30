@@ -22,3 +22,7 @@ ml/v1_linear_regression/plots/
 pipeline/data/
 
 .DS_Store
+
+# local working notes, not part of the project
+CLAUDE.md
+PLAN.md

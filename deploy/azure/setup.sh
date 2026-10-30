@@ -87,7 +87,7 @@ fi
 az postgres flexible-server parameter set --server-name "$DB_SERVER" \
   --resource-group "$RESOURCE_GROUP" --name azure.extensions --value POSTGIS --output none
 az postgres flexible-server db create --server-name "$DB_SERVER" \
-  --resource-group "$RESOURCE_GROUP" --database-name "$DB_NAME" --output none
+  --resource-group "$RESOURCE_GROUP" --name "$DB_NAME" --output none
 
 step "Container Apps environment $ENVIRONMENT (free monthly allowance)"
 if ! az containerapp env show --name "$ENVIRONMENT" --resource-group "$RESOURCE_GROUP" \
