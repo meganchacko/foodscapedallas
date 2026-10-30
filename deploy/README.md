@@ -14,7 +14,7 @@ Check current prices before creating anything: https://azure.microsoft.com/prici
 
 ## First time
 
-1. Install the Azure CLI (`brew install azure-cli`) and sign in: `az login`.
+1. Install the Azure and GitHub CLIs (`brew install azure-cli gh`) and sign in: `az login`, `gh auth login`.
 2. Create the infrastructure:
    ```bash
    CENSUS_API_KEY=... deploy/azure/setup.sh

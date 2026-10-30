@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Creates FoodScape Dallas's Azure infrastructure. Run once, from the repo root, after
-# `az login`:
+# `az login` and `gh auth login`:
 #
 #   CENSUS_API_KEY=... deploy/azure/setup.sh
 #
@@ -106,6 +106,10 @@ fi
 step "GitHub Actions deploy login (OIDC, free)"
 SUBSCRIPTION_ID="$(az account show --query id -o tsv)"
 TENANT_ID="$(az account show --query tenantId -o tsv)"
+# GitHub's token names the repo with its owner's and its own numeric IDs, e.g.
+# repo:owner@123/name@456:ref:refs/heads/main, so a renamed or re-created repo can't reuse the login
+GITHUB_SUBJECT="$(gh api "repos/${GITHUB_REPO}" \
+  --jq '"repo:\(.owner.login)@\(.owner.id)/\(.name)@\(.id):ref:refs/heads/main"')"
 CLIENT_ID="$(az ad app list --display-name "$GITHUB_APP" --query '[0].appId' -o tsv)"
 if [ -z "$CLIENT_ID" ]; then
   CLIENT_ID="$(az ad app create --display-name "$GITHUB_APP" --query appId -o tsv)"
@@ -114,7 +118,7 @@ if [ -z "$CLIENT_ID" ]; then
   az ad app federated-credential create --id "$CLIENT_ID" --parameters "{
     \"name\": \"github-main\",
     \"issuer\": \"https://token.actions.githubusercontent.com\",
-    \"subject\": \"repo:${GITHUB_REPO}:ref:refs/heads/main\",
+    \"subject\": \"${GITHUB_SUBJECT}\",
     \"audiences\": [\"api://AzureADTokenExchange\"]
   }" --output none
 fi
