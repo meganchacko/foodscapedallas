@@ -39,6 +39,10 @@ Push to `main`. Migrations run first; if they fail, the old version keeps runnin
 - **Redis** runs as a sidecar container inside the API app, since it only holds disposable data (caches and rate-limit counts). The API is capped at one replica so rate limits stay exact. The weekly pipeline can't reach the sidecar to clear the map cache, so new data appears within 24 hours (the cache's expiry).
 - **Scale to zero:** when nobody uses the site, the API stops and costs nothing; the first request afterwards takes a few seconds while it starts.
 
+## Custom domain
+
+The site is at https://foodscape.site (registered at Namecheap), as well as its Azure address. Namecheap's DNS has a TXT record proving ownership, an ALIAS record pointing `foodscape.site` at the Static Web App, and a CNAME for `www`. Azure provides the HTTPS certificate for free. `deploy.sh` adds every custom domain linked to the Static Web App to the API's allowed origins, so linking a new one only needs a redeploy.
+
 ## Removing everything
 
 ```bash

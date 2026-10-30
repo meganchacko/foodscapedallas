@@ -24,8 +24,14 @@ ENVIRONMENT_ID="$(az containerapp env show --name "$ENVIRONMENT" \
   --resource-group "$RESOURCE_GROUP" --query id -o tsv)"
 DB_HOST="$(az postgres flexible-server show --name "$DB_SERVER" \
   --resource-group "$RESOURCE_GROUP" --query fullyQualifiedDomainName -o tsv)"
+# The site's Azure address plus any custom domains (e.g. foodscape.site), comma-separated: the
+# API only accepts browser requests from these
 FRONTEND_URL="https://$(az staticwebapp show --name "$STATIC_WEB_APP" \
   --resource-group "$RESOURCE_GROUP" --query defaultHostname -o tsv)"
+for DOMAIN in $(az staticwebapp hostname list --name "$STATIC_WEB_APP" \
+    --resource-group "$RESOURCE_GROUP" --query "[].name" -o tsv); do
+  FRONTEND_URL="${FRONTEND_URL},https://${DOMAIN}"
+done
 KEY_VAULT_URI="https://${KEY_VAULT}.vault.azure.net/secrets"
 
 # Settings the migrate and pipeline jobs share with the API
