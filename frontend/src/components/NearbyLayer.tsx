@@ -40,7 +40,7 @@ export function NearbyLayer({ search }: { search: NearbySearch }) {
         pathOptions={{ color: '#ffffff', weight: 3, fillColor: SEARCH_POINT_COLOR, fillOpacity: 1 }}
         pane="places"
       >
-        <Tooltip permanent direction="top" offset={[0, -8]}>
+        <Tooltip permanent direction="top" offset={[0, -8]} pane="tooltipPane">
           {point.label === 'Your location' ? 'You' : 'Search location'}
         </Tooltip>
       </CircleMarker>
@@ -60,7 +60,8 @@ export function NearbyLayer({ search }: { search: NearbySearch }) {
             }}
             eventHandlers={{ click: () => search.setSelectedPlaceId(place.id) }}
           >
-            <Popup>
+            {/* Popups would otherwise inherit the "places" pane and be drawn under other pins */}
+            <Popup pane="popupPane">
               <strong>{place.name}</strong>
               <div>{formatMiles(place.distance_m)} away</div>
               {place.address && <div>{place.address}</div>}

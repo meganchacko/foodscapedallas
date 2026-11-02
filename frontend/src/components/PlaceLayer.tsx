@@ -37,7 +37,8 @@ export function PlaceLayer({ places, visibleTypes }: Props) {
               // a click on a pin opens its popup without also selecting the tract underneath
               bubblingMouseEvents={false}
             >
-              <Popup>
+              {/* Popups would otherwise inherit the "places" pane and be drawn under other pins */}
+              <Popup pane="popupPane">
                 <strong>{info.name}</strong>
                 <div>{TYPE_LABELS[info.type]}</div>
                 {info.address && <div>{info.address}</div>}
