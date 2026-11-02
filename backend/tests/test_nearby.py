@@ -76,17 +76,17 @@ def test_nearby_can_filter_by_type_and_snap(seeded_client):
 def test_nearby_reports_the_tract_and_whether_it_is_low_access(seeded_client):
     location = seeded_client.get("/places/nearby", params=HERE).json()["location"]
 
-    assert location["in_dallas_county"] is True
+    assert location["in_coverage_area"] is True
     assert location["tract_geoid"] == "48113000001"
     assert location["low_access"] is True
 
 
-def test_point_outside_dallas_county_is_flagged(seeded_client):
-    fort_worth = {"lat": 32.75, "lng": -97.33}
+def test_point_outside_the_covered_area_is_flagged(seeded_client):
+    houston = {"lat": 29.76, "lng": -95.37}
 
-    location = seeded_client.get("/places/nearby", params=fort_worth).json()["location"]
+    location = seeded_client.get("/places/nearby", params=houston).json()["location"]
 
-    assert location["in_dallas_county"] is False
+    assert location["in_coverage_area"] is False
     assert location["low_access"] is None
 
 

@@ -1,4 +1,4 @@
-from app.services.priority import county_median, is_priority_area
+from app.services.priority import county_median, county_medians, is_priority_area
 
 MEDIAN = 35.0
 
@@ -28,3 +28,14 @@ def test_missing_data_is_never_a_priority_area():
 def test_county_median_ignores_missing_values():
     assert county_median([30.0, None, 40.0, 50.0]) == 40.0
     assert county_median([None, None]) is None
+
+
+def test_county_medians_group_tracts_by_county():
+    obesity = {
+        "48113000001": 30.0,  # Dallas
+        "48113000002": 40.0,  # Dallas
+        "48439000001": 25.0,  # Tarrant
+        "48439000002": None,  # Tarrant, no estimate
+    }
+
+    assert county_medians(obesity) == {"Dallas": 35.0, "Tarrant": 25.0}

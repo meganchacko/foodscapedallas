@@ -25,8 +25,9 @@ logger = logging.getLogger(__name__)
 NOMINATIM_URL = "https://nominatim.openstreetmap.org/search"
 USER_AGENT = "FoodScapeDallas/0.1 (https://github.com/meganchacko/foodscapedallas)"
 
-# Only search around Dallas County (left, top, right, bottom), so "Main St" finds Dallas's
-DALLAS_VIEWBOX = "-97.05,33.00,-96.50,32.53"
+# Only search around the covered counties (Dallas, Tarrant, Collin, Denton) as left, top, right,
+# bottom, so "Main St" finds one of ours
+AREA_VIEWBOX = "-97.56,33.44,-96.28,32.53"
 
 CACHE_TTL_SECONDS = 30 * 24 * 60 * 60  # addresses don't move
 RATE_LIMIT_KEY = "nominatim:rate_limit"
@@ -51,13 +52,13 @@ class GeocoderUnavailable(Exception):
 
 
 def fetch_nominatim(query: str) -> list[dict]:
-    """Ask Nominatim for the best match near Dallas. Returns its raw JSON results."""
+    """Ask Nominatim for the best match in the covered area. Returns its raw JSON results."""
     params = {
         "q": query,
         "format": "jsonv2",
         "limit": 1,
         "countrycodes": "us",
-        "viewbox": DALLAS_VIEWBOX,
+        "viewbox": AREA_VIEWBOX,
         "bounded": 1,  # only return results inside the viewbox
     }
     response = requests.get(
@@ -88,7 +89,8 @@ class NominatimGeocoder:
         self.fetch = fetch
 
     def geocode(self, query: str) -> GeocodeLookup:
-        key = f"geocode:v1:{normalize(query)}"
+        # v2: the search area grew, so answers cached for the old (Dallas-only) area are skipped
+        key = f"geocode:v2:{normalize(query)}"
         cached = get_cached(self.cache, key)
         if cached is not None:
             data = json.loads(cached)

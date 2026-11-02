@@ -22,6 +22,7 @@ class FoodAccess(BaseModel):
 
 class TractProperties(BaseModel):
     geoid: str
+    county: str  # e.g. "Dallas"; tract numbers repeat across counties, so labels need both
     population: int | None
     obesity_pct: float | None
     # straight-line distance from inside the tract to the closest grocery store, in meters
@@ -38,6 +39,7 @@ class TractFeature(BaseModel):
 
 class TractCollection(BaseModel):
     type: Literal["FeatureCollection"] = "FeatureCollection"
-    # county median of tract obesity estimates: the "high obesity" line for priority areas
-    obesity_median_pct: float | None
+    # county name -> median of its tracts' obesity estimates: the "high obesity" line for
+    # priority areas in that county
+    obesity_median_by_county: dict[str, float | None]
     features: list[TractFeature]

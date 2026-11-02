@@ -14,10 +14,10 @@ class NearbyPlace(PlaceProperties):
 class SearchLocation(BaseModel):
     lat: float
     lng: float
-    in_dallas_county: bool
+    in_coverage_area: bool  # inside one of the covered counties' tracts
     tract_geoid: str | None
     # Whether the point's tract is low access under the 2019 supermarket definition (what
-    # "food desert" usually means). None when unknown or outside Dallas County.
+    # "food desert" usually means). None when unknown or outside the covered counties.
     low_access: bool | None
 
 

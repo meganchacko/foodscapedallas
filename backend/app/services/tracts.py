@@ -5,8 +5,9 @@ from collections import defaultdict
 
 from sqlalchemy import Engine, text
 
+from app.counties import county_of
 from app.schemas.tracts import FoodAccess, TractCollection, TractFeature, TractProperties
-from app.services.priority import county_median, is_priority_area
+from app.services.priority import county_medians, is_priority_area
 
 # 5 decimal places of latitude/longitude is about 1 m: plenty for a map, and much smaller JSON
 COORDINATE_DECIMALS = 5
@@ -58,7 +59,7 @@ def get_tract_collection(engine: Engine) -> TractCollection:
         row.geoid: float(row.obesity_pct) if row.obesity_pct is not None else None
         for row in tract_rows
     }
-    obesity_median = county_median(list(obesity_by_geoid.values()))
+    medians = county_medians(obesity_by_geoid)
 
     # geoid -> {measure -> FoodAccess}
     food_access: dict[str, dict[str, FoodAccess]] = defaultdict(dict)
@@ -69,7 +70,9 @@ def get_tract_collection(engine: Engine) -> TractCollection:
             low_income_low_access=row.low_income_low_access,
             low_access_population=row.low_access_population,
             priority_area=is_priority_area(
-                row.low_access, obesity_by_geoid.get(row.geoid), obesity_median
+                row.low_access,
+                obesity_by_geoid.get(row.geoid),
+                medians.get(county_of(row.geoid)),
             ),
         )
 
@@ -78,6 +81,7 @@ def get_tract_collection(engine: Engine) -> TractCollection:
             geometry=json.loads(row.geometry),
             properties=TractProperties(
                 geoid=row.geoid,
+                county=county_of(row.geoid),
                 population=row.population,
                 obesity_pct=obesity_by_geoid[row.geoid],
                 nearest_grocery_m=(
@@ -88,4 +92,4 @@ def get_tract_collection(engine: Engine) -> TractCollection:
         )
         for row in tract_rows
     ]
-    return TractCollection(obesity_median_pct=obesity_median, features=features)
+    return TractCollection(obesity_median_by_county=medians, features=features)

@@ -28,7 +28,7 @@ SRID = 4326
 
 
 class Tract(Base):
-    """A 2020 census tract in Dallas County, with the stats shown on the map.
+    """A 2020 census tract in one of the covered counties, with the stats shown on the map.
 
     Data columns are nullable because the pipeline loads tract shapes first and fills in
     population and CDC numbers afterwards; null means "not known", not zero.

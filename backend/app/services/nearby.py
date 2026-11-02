@@ -71,7 +71,7 @@ def find_nearby(
     location = SearchLocation(
         lat=lat,
         lng=lng,
-        in_dallas_county=tract is not None,
+        in_coverage_area=tract is not None,
         tract_geoid=tract.geoid if tract else None,
         low_access=tract.low_access if tract else None,
     )

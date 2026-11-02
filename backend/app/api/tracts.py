@@ -14,7 +14,7 @@ router = APIRouter()
 
 # The pipeline deletes every "tracts:*" key after loading new data. Bump the version when the
 # response shape changes, so an old-shaped cached copy is never served.
-TRACTS_CACHE_KEY = "tracts:v1"
+TRACTS_CACHE_KEY = "tracts:v2"
 # Safety net: even if the pipeline can't clear the cache, it refreshes within a day
 CACHE_TTL_SECONDS = 24 * 60 * 60
 
@@ -28,7 +28,7 @@ def list_tracts(
     engine: Annotated[Engine, Depends(get_engine)],
     cache: Annotated[Redis, Depends(get_redis)],
 ) -> Response:
-    """Every Dallas County tract as GeoJSON, with its food access and health stats.
+    """Every tract in the covered counties as GeoJSON, with its food access and health stats.
 
     Cache-aside: return the copy in Redis if there is one; otherwise build it from the
     database, store it in Redis, and return it. The X-Cache header says which happened.

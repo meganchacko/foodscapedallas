@@ -26,7 +26,7 @@ def geocode(
     geocoder: Annotated[NominatimGeocoder, Depends(get_geocoder)],
     response: Response,
 ) -> GeocodeResponse:
-    """Coordinates for an address or place in the Dallas area.
+    """Coordinates for an address or place in the Dallas-Fort Worth area.
 
     404 if nothing matches; 503 if the geocoding service is unavailable. The X-Cache header says
     whether the answer came from our cache (HIT) or from Nominatim (MISS).
@@ -42,7 +42,7 @@ def geocode(
     if lookup.result is None:
         raise HTTPException(
             status.HTTP_404_NOT_FOUND,
-            "We couldn't find that address in the Dallas area. "
+            "We couldn't find that address in the Dallas-Fort Worth area. "
             "Try adding a street number or ZIP code.",
             headers=cache_header,
         )

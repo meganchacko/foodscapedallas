@@ -70,6 +70,7 @@ def test_tracts_returns_a_geojson_feature_collection(seeded_client):
 def test_tract_properties_include_stats_and_both_food_access_definitions(seeded_client):
     west = features_by_geoid(seeded_client.get("/tracts"))["48113000001"]["properties"]
 
+    assert west["county"] == "Dallas"
     assert west["population"] == 1000
     assert west["obesity_pct"] == 40.0
     assert west["food_access"]["usda_2019_supermarkets"]["low_access"] is True
@@ -87,10 +88,38 @@ def test_priority_area_follows_the_selected_food_access_definition(seeded_client
     response = seeded_client.get("/tracts")
     west = features_by_geoid(response)["48113000001"]["properties"]
 
-    # median of 40 and 30 is 35; the west tract (40%) is above it
-    assert response.json()["obesity_median_pct"] == 35.0
+    # Dallas's median of 40 and 30 is 35; the west tract (40%) is above it
+    assert response.json()["obesity_median_by_county"] == {"Dallas": 35.0}
     assert west["food_access"]["usda_2019_supermarkets"]["priority_area"] is True  # low access
     assert west["food_access"]["usda_2025_snap_retailers"]["priority_area"] is False
+
+
+def test_priority_areas_compare_each_tract_with_its_own_county(seeded_client, clean_engine):
+    # A low-access Tarrant tract at 38%: above Dallas's median (35) but it's Tarrant's only
+    # tract, so it's exactly at Tarrant's median and not above it
+    with clean_engine.begin() as connection:
+        connection.execute(
+            text(
+                "INSERT INTO tracts (geoid, geom, population, obesity_pct) "
+                "VALUES ('48439000001', ST_GeomFromText(:shape, 4326), 1500, 38.0)"
+            ),
+            {"shape": WEST_TRACT},
+        )
+        connection.execute(
+            text(
+                "INSERT INTO tract_food_access "
+                "(geoid, measure, low_income, low_access, low_income_low_access, "
+                " low_access_population) "
+                "VALUES ('48439000001', 'usda_2019_supermarkets', true, true, true, 500)"
+            )
+        )
+
+    response = seeded_client.get("/tracts")
+    tarrant = features_by_geoid(response)["48439000001"]["properties"]
+
+    assert response.json()["obesity_median_by_county"] == {"Dallas": 35.0, "Tarrant": 38.0}
+    assert tarrant["county"] == "Tarrant"
+    assert tarrant["food_access"]["usda_2019_supermarkets"]["priority_area"] is False
 
 
 def test_nearest_grocery_distance_is_in_meters(seeded_client):
