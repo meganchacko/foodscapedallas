@@ -21,6 +21,7 @@ import geopandas as gpd
 import pandas as pd
 from sqlalchemy import Engine, text
 
+from pipeline.counties import COUNTIES
 from pipeline.download import download
 from pipeline.loaders.places import sync_places
 
@@ -61,15 +62,16 @@ UPDATE_SNAP_FLAGS = text(
 )
 
 
-def read_current_dallas_retailers(path) -> pd.DataFrame:
-    """Dallas County stores that are authorized right now (no end date)."""
+def read_current_retailers(path) -> pd.DataFrame:
+    """Stores in our counties that are authorized right now (no end date)."""
     with zipfile.ZipFile(path) as archive, archive.open(archive.namelist()[0]) as file:
         retailers = pd.read_csv(file, dtype=str, encoding="utf-8-sig").fillna("")
-    in_dallas = (retailers["State"] == "TX") & (
-        retailers["County"].str.strip().str.upper() == "DALLAS"
+    county_names = {name.upper() for name in COUNTIES.values()}
+    in_area = (retailers["State"] == "TX") & (
+        retailers["County"].str.strip().str.upper().isin(county_names)
     )
     current = retailers["End Date"].str.strip() == ""
-    return retailers[in_dallas & current].reset_index(drop=True)
+    return retailers[in_area & current].reset_index(drop=True)
 
 
 def name_key(name: str) -> str:
@@ -149,7 +151,7 @@ def farmers_markets(retailers: pd.DataFrame) -> list[dict]:
 
 
 def load(engine: Engine) -> int:
-    retailers = read_current_dallas_retailers(download(SNAP_URL, "usda_snap_retailers.zip"))
+    retailers = read_current_retailers(download(SNAP_URL, "usda_snap_retailers.zip"))
 
     with engine.connect() as connection:
         osm_stores = pd.DataFrame(connection.execute(OSM_GROCERY_QUERY).mappings().all())

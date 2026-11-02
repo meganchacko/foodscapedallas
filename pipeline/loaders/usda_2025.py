@@ -12,9 +12,9 @@ import zipfile
 import pandas as pd
 from sqlalchemy import Engine
 
+from pipeline.counties import COUNTY_GEOIDS
 from pipeline.download import download
 from pipeline.loaders.food_access import (
-    DALLAS_COUNTY_FIPS,
     FOOD_ACCESS_COLUMNS,
     to_count,
     to_flag,
@@ -28,23 +28,23 @@ USDA_2025_URL = (
 )
 
 
-def read_dallas_rows(archive: zipfile.ZipFile, filename: str, columns: list[str]) -> pd.DataFrame:
+def read_area_rows(archive: zipfile.ZipFile, filename: str, columns: list[str]) -> pd.DataFrame:
     with archive.open(filename) as file:
         table = pd.read_csv(file, usecols=columns, dtype={"CensusTract20": str}, encoding="latin-1")
     table["CensusTract20"] = table["CensusTract20"].str.zfill(11)
-    return table[table["CensusTract20"].str.startswith(DALLAS_COUNTY_FIPS)]
+    return table[table["CensusTract20"].str.startswith(COUNTY_GEOIDS)]
 
 
 def read_usda_2025(path) -> pd.DataFrame:
     # The low-income flag is in the general tract file; low-access measures are in the
     # straight-line distance file
     with zipfile.ZipFile(path) as archive:
-        general = read_dallas_rows(
+        general = read_area_rows(
             archive,
             "SRAM General Tract Characteristics Data.csv",
             ["CensusTract20", "LowIncomeTracts"],
         )
-        distance = read_dallas_rows(
+        distance = read_area_rows(
             archive,
             "SRAM Straight Line Distance Data.csv",
             [

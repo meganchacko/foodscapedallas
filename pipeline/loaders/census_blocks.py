@@ -1,4 +1,4 @@
-"""2020 census blocks for Dallas County: a center point and population for each block.
+"""2020 census blocks for our counties: a center point and population for each block.
 
 Shapes come from the county TIGER/Line file, which has no population column, so population
 comes from the Census Bureau's data API (2020 redistricting data, P1_001N = total population).
@@ -10,12 +10,11 @@ import requests
 from sqlalchemy import Engine, text
 
 from pipeline.config import get_settings
+from pipeline.counties import COUNTIES, COUNTY_GEOIDS, STATE_FIPS
 from pipeline.download import USER_AGENT, download
 
-BLOCKS_URL = (
-    "https://www2.census.gov/geo/tiger/TIGER2020PL/STATE/48_TEXAS/48113/"
-    "tl_2020_48113_tabblock20.zip"
-)
+# One file per county
+BLOCKS_URL = "https://www2.census.gov/geo/tiger/TIGER2020PL/STATE/48_TEXAS/{county}/{filename}"
 POPULATION_API_URL = "https://api.census.gov/data/2020/dec/pl"
 
 UPSERT_BLOCK = text(
@@ -57,11 +56,19 @@ def read_block_centers(path) -> pd.DataFrame:
     )
 
 
+def download_county_blocks(county: str) -> pd.DataFrame:
+    filename = f"tl_2020_{county}_tabblock20.zip"
+    return read_block_centers(
+        download(BLOCKS_URL.format(county=county, filename=filename), filename)
+    )
+
+
 def fetch_block_population(api_key: str) -> pd.DataFrame:
     params = {
         "get": "P1_001N",
         "for": "block:*",
-        "in": ["state:48", "county:113", "tract:*"],
+        # e.g. "county:113,439,085,121": the API takes a comma-separated list
+        "in": [f"state:{STATE_FIPS}", f"county:{','.join(COUNTIES)}", "tract:*"],
         "key": api_key,
     }
     response = requests.get(
@@ -99,7 +106,7 @@ def load(engine: Engine) -> int:
             "https://api.census.gov/data/key_signup.html and add it to .env"
         )
 
-    centers = read_block_centers(download(BLOCKS_URL, "tl_2020_48113_tabblock20.zip"))
+    centers = pd.concat([download_county_blocks(county) for county in COUNTY_GEOIDS])
     population = fetch_block_population(api_key)
     # inner join: keep blocks that have both a location and a population
     blocks = centers.merge(population, on="geoid", how="inner")

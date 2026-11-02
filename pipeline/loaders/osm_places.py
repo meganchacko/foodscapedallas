@@ -1,4 +1,4 @@
-"""Grocery stores and farmers markets in Dallas County from OpenStreetMap (Overpass API)."""
+"""Grocery stores and farmers markets in our counties from OpenStreetMap (Overpass API)."""
 
 import logging
 import time
@@ -6,6 +6,7 @@ import time
 import requests
 from sqlalchemy import Engine
 
+from pipeline.counties import BBOX
 from pipeline.download import USER_AGENT
 from pipeline.loaders.places import sync_places
 
@@ -13,10 +14,6 @@ logger = logging.getLogger(__name__)
 
 SOURCE = "osm"
 OVERPASS_URL = "https://overpass-api.de/api/interpreter"
-
-# Dallas County's extent (south, west, north, east) plus a small margin. The rectangle also
-# covers bits of neighboring counties; sync_places keeps only places inside a Dallas tract.
-DALLAS_COUNTY_BBOX = (32.53, -97.05, 33.00, -96.50)
 
 # Grocery: supermarkets and greengrocers (produce stores). Convenience stores aren't included,
 # matching the 2019 USDA supermarket-based definition.
@@ -47,7 +44,8 @@ RETRY_WAIT_SECONDS = 30
 
 
 def fetch_elements() -> list[dict]:
-    south, west, north, east = DALLAS_COUNTY_BBOX
+    # sync_places keeps only places inside one of our tracts
+    south, west, north, east = BBOX
     query = OVERPASS_QUERY.format(south=south, west=west, north=north, east=east)
 
     # Overpass is a free, shared server: it answers 429 (too many requests) or 504 (busy) when

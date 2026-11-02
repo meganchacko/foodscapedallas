@@ -1,5 +1,8 @@
 """Turning raw source data into rows, without touching the network or the database."""
 
+import io
+import zipfile
+
 import pandas as pd
 
 from pipeline.loaders.cdc_places import parse_obesity
@@ -7,6 +10,7 @@ from pipeline.loaders.census_blocks import parse_population_response
 from pipeline.loaders.food_access import to_count, to_flag
 from pipeline.loaders.osm_places import parse_element, usable_places
 from pipeline.loaders.pantries import read_pantries
+from pipeline.loaders.usda_2025 import read_area_rows
 
 
 def test_usda_flags_and_counts_turn_blanks_into_none():
@@ -114,3 +118,28 @@ def test_pantry_csv_rows_become_places(tmp_path):
     assert (pantry["lat"], pantry["lon"]) == (32.77, -96.79)
     assert pantry["accepts_snap"] is None  # blank means unknown
     assert pantry["accepts_wic"] is True
+
+
+def test_usda_2025_keeps_only_tracts_in_our_counties():
+    csv = (
+        "CensusTract20,LowIncomeTracts\n"
+        "48113000100,1\n"  # Dallas
+        "48439101100,0\n"  # Tarrant
+        "48085030100,1\n"  # Collin
+        "48121020100,0\n"  # Denton
+        "48201100000,1\n"  # Harris (Houston): not ours
+        "4113000100,1\n"  # a leading zero dropped by the source file: state 04 (Arizona)
+    )
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w") as archive:
+        archive.writestr("tracts.csv", csv)
+
+    with zipfile.ZipFile(buffer) as archive:
+        rows = read_area_rows(archive, "tracts.csv", ["CensusTract20", "LowIncomeTracts"])
+
+    assert rows["CensusTract20"].tolist() == [
+        "48113000100",
+        "48439101100",
+        "48085030100",
+        "48121020100",
+    ]

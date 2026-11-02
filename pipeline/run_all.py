@@ -1,4 +1,4 @@
-"""Load all Dallas County data into the database, in order.
+"""Load all data for our counties (see pipeline/counties.py) into the database, in order.
 
 Run from the repo root:  python -m pipeline.run_all
 

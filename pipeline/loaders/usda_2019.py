@@ -18,9 +18,9 @@ import zipfile
 import pandas as pd
 from sqlalchemy import Engine
 
+from pipeline.counties import COUNTY_GEOIDS
 from pipeline.download import download
 from pipeline.loaders.food_access import (
-    DALLAS_COUNTY_FIPS,
     FOOD_ACCESS_COLUMNS,
     to_count,
     to_flag,
@@ -39,7 +39,7 @@ RELATIONSHIP_URL = (
 
 
 def read_usda_2019(path) -> pd.DataFrame:
-    """Dallas County rows from the 2019 Atlas, keyed by 2010 tract."""
+    """Rows for our counties from the 2019 Atlas, keyed by 2010 tract."""
     with zipfile.ZipFile(path) as archive, archive.open("Food Access Research Atlas.csv") as file:
         atlas = pd.read_csv(
             file,
@@ -54,7 +54,7 @@ def read_usda_2019(path) -> pd.DataFrame:
             encoding="latin-1",
         )
     atlas["CensusTract"] = atlas["CensusTract"].str.zfill(11)
-    atlas = atlas[atlas["CensusTract"].str.startswith(DALLAS_COUNTY_FIPS)]
+    atlas = atlas[atlas["CensusTract"].str.startswith(COUNTY_GEOIDS)]
     return pd.DataFrame(
         {
             "geoid_2010": atlas["CensusTract"],
@@ -67,7 +67,7 @@ def read_usda_2019(path) -> pd.DataFrame:
 
 
 def read_relationship(path) -> pd.DataFrame:
-    """Rows linking each Dallas County 2020 tract to the 2010 tracts it overlaps."""
+    """Rows linking each 2020 tract in our counties to the 2010 tracts it overlaps."""
     relationship = pd.read_csv(
         path,
         sep="|",
@@ -81,7 +81,7 @@ def read_relationship(path) -> pd.DataFrame:
         dtype={"GEOID_TRACT_20": str, "GEOID_TRACT_10": str},
         encoding="utf-8-sig",
     )
-    relationship = relationship[relationship["GEOID_TRACT_20"].str.startswith(DALLAS_COUNTY_FIPS)]
+    relationship = relationship[relationship["GEOID_TRACT_20"].str.startswith(COUNTY_GEOIDS)]
     return relationship.rename(
         columns={
             "GEOID_TRACT_20": "geoid",

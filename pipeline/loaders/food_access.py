@@ -3,8 +3,6 @@
 import pandas as pd
 from sqlalchemy import Engine, text
 
-DALLAS_COUNTY_FIPS = "48113"
-
 # Columns every food access loader produces, one row per 2020 tract
 FOOD_ACCESS_COLUMNS = [
     "geoid",

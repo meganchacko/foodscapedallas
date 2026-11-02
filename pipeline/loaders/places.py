@@ -2,7 +2,7 @@
 
 from sqlalchemy import Engine, bindparam, text
 
-# Insert a place only if it falls inside a Dallas County tract. Sources are fetched by bounding
+# Insert a place only if it falls inside one of our tracts. Sources are fetched by bounding
 # box (a rectangle), which also catches slivers of neighboring counties.
 UPSERT_PLACE = text(
     """

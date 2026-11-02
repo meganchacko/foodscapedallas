@@ -1,14 +1,14 @@
-"""2020 census tract boundaries for Dallas County, from Census TIGER/Line."""
+"""2020 census tract boundaries for our counties, from Census TIGER/Line."""
 
 import geopandas as gpd
+import pandas as pd
 from sqlalchemy import Engine, text
 
+from pipeline.counties import COUNTY_GEOIDS
 from pipeline.download import download
 
-# County-level file from the 2020 redistricting (PL 94-171) release: just Dallas County's 645 tracts
-TRACTS_URL = (
-    "https://www2.census.gov/geo/tiger/TIGER2020PL/STATE/48_TEXAS/48113/tl_2020_48113_tract20.zip"
-)
+# County-level files from the 2020 redistricting (PL 94-171) release, one per county
+TRACTS_URL = "https://www2.census.gov/geo/tiger/TIGER2020PL/STATE/48_TEXAS/{county}/{filename}"
 
 # For the map's lighter copy of each shape. Measured on Dallas tracts: borders move at most
 # ~20 m (median ~6 m), and the map payload is about half the size of the full-detail shapes.
@@ -55,6 +55,12 @@ def upsert_tracts(engine: Engine, tracts: gpd.GeoDataFrame) -> int:
     return len(rows)
 
 
+def download_county_tracts(county: str) -> gpd.GeoDataFrame:
+    filename = f"tl_2020_{county}_tract20.zip"
+    return read_tracts(download(TRACTS_URL.format(county=county, filename=filename), filename))
+
+
 def load(engine: Engine) -> int:
-    path = download(TRACTS_URL, "tl_2020_48113_tract20.zip")
-    return upsert_tracts(engine, read_tracts(path))
+    # One table for all counties, so simplification keeps borders between counties aligned too
+    tracts = pd.concat([download_county_tracts(county) for county in COUNTY_GEOIDS])
+    return upsert_tracts(engine, tracts.reset_index(drop=True))

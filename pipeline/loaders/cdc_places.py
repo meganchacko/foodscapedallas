@@ -1,16 +1,16 @@
-"""CDC PLACES adult obesity estimates for Dallas County tracts (2025 release, 2020 tracts).
+"""CDC PLACES adult obesity estimates for our counties' tracts (2025 release, 2020 tracts).
 
 PLACES estimates the share of adults with obesity in each tract from a national health survey
 (BRFSS) plus census data. These are modeled estimates, not counts of real diagnoses. We query
-CDC's open data API for just Dallas County instead of downloading the whole country.
+CDC's open data API for just our counties instead of downloading the whole country.
 """
 
 import pandas as pd
 import requests
 from sqlalchemy import Engine, text
 
+from pipeline.counties import COUNTY_GEOIDS
 from pipeline.download import USER_AGENT
-from pipeline.loaders.food_access import DALLAS_COUNTY_FIPS
 
 # "PLACES: Census Tract Data (GIS Friendly Format), 2025 release" on data.cdc.gov
 PLACES_API_URL = "https://data.cdc.gov/resource/yjkw-uj5s.json"
@@ -19,10 +19,11 @@ UPDATE_OBESITY = text("UPDATE tracts SET obesity_pct = :obesity_pct WHERE geoid 
 
 
 def fetch_obesity() -> list[dict]:
+    county_list = ",".join(f"'{geoid}'" for geoid in COUNTY_GEOIDS)
     params = {
-        "countyfips": DALLAS_COUNTY_FIPS,
+        "$where": f"countyfips in({county_list})",  # SoQL, the API's SQL-like query language
         "$select": "tractfips,obesity_crudeprev",
-        "$limit": 5000,  # Dallas County has 645 tracts; the API's default page size is 1000
+        "$limit": 5000,  # our counties have ~1,400 tracts; the API's default page size is 1000
     }
     response = requests.get(
         PLACES_API_URL, params=params, headers={"User-Agent": USER_AGENT}, timeout=60
