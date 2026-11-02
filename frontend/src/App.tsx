@@ -29,6 +29,9 @@ function App() {
   const nearbySearch = useNearbySearch()
   const [tracts, setTracts] = useState<TractCollection | null>(null)
   const [loadError, setLoadError] = useState(false)
+  // The API scales to zero when idle, so the first visit after a quiet spell can take ~30
+  // seconds while it starts. After a few seconds, the loading notice says so.
+  const [slowLoad, setSlowLoad] = useState(false)
   const [layerKind, setLayerKind] = useState<TractLayerKind>('food_access')
   const [measure, setMeasure] = useState<Measure>('usda_2019_supermarkets')
   const [places, setPlaces] = useState<PlaceCollection | null>(null)
@@ -46,6 +49,8 @@ function App() {
     fetchPlaces()
       .then(setPlaces)
       .catch(() => setLoadError(true))
+    const slowTimer = setTimeout(() => setSlowLoad(true), 4000)
+    return () => clearTimeout(slowTimer)
   }, [])
 
   const placeCounts = useMemo(() => {
@@ -120,7 +125,6 @@ function App() {
               tracts && <p className="hint">Click a tract to see its details.</p>
             )}
             {loadError && <p className="error">Couldn't load map data. Is the API running?</p>}
-            {!tracts && !loadError && <p className="hint">Loading tracts…</p>}
           </>
         )}
       </aside>
@@ -157,6 +161,19 @@ function App() {
               {view === 'nearby' && <NearbyLayer search={nearbySearch} />}
             </Pane>
           </MapView>
+          {view === 'explore' && !tracts && !loadError && (
+            // On the map itself, where people are looking while it's empty
+            <div className="map-status" role="status">
+              {slowLoad ? (
+                <>
+                  <strong>Waking up the server…</strong>
+                  <span>It sleeps when nobody's using it. This can take up to 30 seconds.</span>
+                </>
+              ) : (
+                <strong>Loading the map…</strong>
+              )}
+            </div>
+          )}
         </main>
       )}
     </div>
