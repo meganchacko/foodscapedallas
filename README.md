@@ -1,6 +1,6 @@
 # FoodScape Dallas
 
-FoodScape Dallas is a website that maps food access in Dallas County. It helps city planners find food deserts and test where a new grocery store would help most, and helps residents find food near them and get there. The map uses public tract-level data (USDA Food Access Research Atlas, CDC PLACES), and a separate personal health check uses a model trained on the UCI obesity dataset.
+FoodScape Dallas is a website that maps food access across four Dallas–Fort Worth counties: Dallas, Tarrant, Collin, and Denton. It helps city planners find food deserts and test where a new grocery store would help most, and helps residents find food near them and get there. The map uses public tract-level data (USDA Food Access Research Atlas, CDC PLACES), and a separate personal health check uses a model trained on the UCI obesity dataset.
 
 ## Running the app
 
@@ -25,7 +25,7 @@ The map needs data: run the pipeline once (see [Loading the data](#loading-the-d
 ### The map
 
 - Shade tracts by **food access** (either USDA definition) or **adult obesity rate**.
-- **Priority areas** outline tracts with low food access *and* an adult obesity rate above the county median. They show where the two problems occur together, not that one causes the other.
+- **Priority areas** outline tracts with low food access *and* an adult obesity rate above their county's median (each tract is compared with its own county). They show where the two problems occur together, not that one causes the other.
 - Pins for grocery stores, pantries, and farmers markets, filterable by type.
 - Click a tract for its details.
 
@@ -33,7 +33,7 @@ The map needs data: run the pipeline once (see [Loading the data](#loading-the-d
 
 - Search by address or place name, or share your location (the browser asks first; coordinates are only used for the search and aren't stored).
 - Results within 0.5 to 10 miles, closest first, filterable by type and SNAP acceptance.
-- A notice when the location is in a low food access area, outside Dallas County, or has nothing nearby (with a one-click wider search).
+- A notice when the location is in a low food access area, outside the four counties, or has nothing nearby (with a one-click wider search).
 - **Transit directions** on every result: opens Google Maps on the public transit tab, from the searched location to the place's address (a plain Google Maps link; no API key).
 
 ## Development
@@ -64,7 +64,7 @@ Frontend (from `frontend/`): `npm test` (Vitest), `npm run lint`, `npm run build
 
 ## Loading the data
 
-The data pipeline is a separate program from the API. It downloads public data for Dallas County and loads it into the database.
+The data pipeline is a separate program from the API. It downloads public data for the counties listed in `pipeline/counties.py` and loads it into the database. To add a county, add it there and in `backend/app/counties.py`.
 
 ```bash
 pip install -r pipeline/requirements.txt
@@ -78,7 +78,7 @@ It needs a free Census API key in `.env` (`CENSUS_API_KEY`, sign up at https://a
 
 | Data | Source | Notes |
 | --- | --- | --- |
-| Tract boundaries | Census TIGER/Line 2020, Dallas County | 645 tracts |
+| Tract boundaries | Census TIGER/Line 2020, one file per county | 1,507 tracts (Dallas 645, Tarrant 449, Collin 220, Denton 193) |
 | Block centers + population | Census TIGER/Line 2020 + Census API (2020 redistricting data) | Population per tract is the sum of its blocks |
 | Food access, 2019 definition | USDA Food Access Research Atlas 2019 (Large Retailer Access Map) | Counts supermarkets and large grocery stores |
 | Food access, 2025 definition | USDA Food Access Research Atlas 2025 (SNAP-authorized Retailer Access Map) | Counts any SNAP-authorized store, including convenience stores |
