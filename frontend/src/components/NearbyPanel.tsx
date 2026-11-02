@@ -106,10 +106,10 @@ function LocationNotices({ search }: { search: NearbySearch }) {
 
   return (
     <>
-      {!location.in_dallas_county && (
+      {!location.in_coverage_area && (
         <p className="notice" role="status">
-          This location is outside Dallas County. FoodScape only covers Dallas County, so places
-          across the county line won't appear.
+          This location is outside the area FoodScape covers (Dallas, Tarrant, Collin, and Denton
+          counties), so places outside those counties won't appear.
         </p>
       )}
       {location.low_access && (

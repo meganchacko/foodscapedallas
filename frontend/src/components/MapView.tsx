@@ -2,7 +2,7 @@ import 'leaflet/dist/leaflet.css'
 import type { ReactNode } from 'react'
 import { MapContainer, TileLayer } from 'react-leaflet'
 
-// Downtown Dallas, zoomed out enough to show most of the county
+// Downtown Dallas. Once the tracts load, the map zooms to fit all four counties.
 const DALLAS_CENTER: [number, number] = [32.8, -96.78]
 const INITIAL_ZOOM = 10
 

@@ -83,7 +83,7 @@ function App() {
       <aside className="sidebar">
         <header>
           <h1>FoodScape Dallas</h1>
-          <p className="subtitle">Food access and health across Dallas County</p>
+          <p className="subtitle">Food access and health across Dallas–Fort Worth</p>
         </header>
         <ViewTabs view={view} onChange={setView} />
         {view === 'health' ? (
@@ -108,7 +108,8 @@ function App() {
               layerKind={layerKind}
               measure={measure}
               showPriority={showPriority}
-              obesityMedian={tracts?.obesity_median_pct ?? null}
+              obesityMedians={tracts?.obesity_median_by_county ?? {}}
+              selectedCounty={selectedTract?.county ?? null}
             />
             {selectedTract ? (
               <TractPanel

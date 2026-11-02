@@ -69,15 +69,16 @@ export function foodAccessLabel(tract: TractProperties, measure: Measure): strin
   return FOOD_ACCESS_CLASSES[0].label
 }
 
-// GEOID 48113000101 -> "Tract 1.01": the last 6 digits are the tract number with 2 implied
-// decimal places, which is how the Census writes tract names
-export function tractName(geoid: string): string {
-  const number = Number(geoid.slice(-6)) / 100
-  return `Tract ${number}`
+// GEOID 48113000101 in Dallas -> "Tract 1.01, Dallas County": the last 6 digits are the tract
+// number with 2 implied decimal places, which is how the Census writes tract names. Tract
+// numbers repeat across counties, so the county is part of the name.
+export function tractName(tract: Pick<TractProperties, 'geoid' | 'county'>): string {
+  const number = Number(tract.geoid.slice(-6)) / 100
+  return `Tract ${number}, ${tract.county} County`
 }
 
 export const PRIORITY_EXPLANATION =
-  'Outlined tracts have low food access and an adult obesity rate above the county median.'
+  'Outlined tracts have low food access and an adult obesity rate above their county\'s median.'
 
 // Required wording: the overlap shows where problems coincide, not that one causes the other
 export const NOT_CAUSATION =

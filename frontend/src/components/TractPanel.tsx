@@ -21,9 +21,9 @@ function yesNo(value: boolean | null | undefined): string {
 export function TractPanel({ tract, measure, onClose }: Props) {
   const access = tract.food_access[measure]
   return (
-    <section className="tract-panel" aria-label={`Details for ${tractName(tract.geoid)}`}>
+    <section className="tract-panel" aria-label={`Details for ${tractName(tract)}`}>
       <div className="panel-header">
-        <h2>{tractName(tract.geoid)}</h2>
+        <h2>{tractName(tract)}</h2>
         <button type="button" onClick={onClose} aria-label="Close tract details">
           ×
         </button>

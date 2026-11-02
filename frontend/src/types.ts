@@ -13,6 +13,7 @@ export type FoodAccess = {
 
 export type TractProperties = {
   geoid: string
+  county: string // e.g. "Dallas"
   population: number | null
   obesity_pct: number | null
   nearest_grocery_m: number | null
@@ -22,7 +23,8 @@ export type TractProperties = {
 export type TractFeature = Feature<MultiPolygon, TractProperties>
 
 export type TractCollection = FeatureCollection<MultiPolygon, TractProperties> & {
-  obesity_median_pct: number | null
+  // county name -> median of its tracts' obesity estimates (the priority area line)
+  obesity_median_by_county: Record<string, number | null>
 }
 
 export type PlaceType = 'grocery' | 'pantry' | 'farmers_market'
@@ -61,7 +63,7 @@ export type NearbyPlace = PlaceProperties & {
 export type SearchLocation = {
   lat: number
   lng: number
-  in_dallas_county: boolean
+  in_coverage_area: boolean
   tract_geoid: string | null
   low_access: boolean | null
 }

@@ -94,7 +94,7 @@ export function TractLayer({
               ? 'No data'
               : `${tract.obesity_pct}% adult obesity`
             : foodAccessLabel(tract, currentMeasure)
-        return `${tractName(tract.geoid)}: ${value}`
+        return `${tractName(tract)}: ${value}`
       },
       { sticky: true },
     )

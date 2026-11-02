@@ -9,14 +9,26 @@ import {
 } from '../mapStyle'
 import type { Measure, TractLayerKind } from '../types'
 
+// "Dallas County median: 35.8%" for the selected tract's county, otherwise every county's
+function medianText(medians: Record<string, number | null>, county: string | null): string {
+  if (county !== null && medians[county] != null) {
+    return `${county} County median: ${medians[county]}%`
+  }
+  const known = Object.entries(medians).filter(([, median]) => median !== null)
+  if (known.length === 0) return ''
+  return `County medians: ${known.map(([name, median]) => `${name} ${median}%`).join(', ')}`
+}
+
 type Props = {
   layerKind: TractLayerKind
   measure: Measure
   showPriority: boolean
-  obesityMedian: number | null
+  obesityMedians: Record<string, number | null>
+  // the selected tract's county, whose median applies to it; null when no tract is selected
+  selectedCounty: string | null
 }
 
-export function Legend({ layerKind, measure, showPriority, obesityMedian }: Props) {
+export function Legend({ layerKind, measure, showPriority, obesityMedians, selectedCounty }: Props) {
   const items: { label: string; color: string }[] =
     layerKind === 'obesity' ? [...OBESITY_BINS] : [...FOOD_ACCESS_CLASSES]
 
@@ -41,8 +53,8 @@ export function Legend({ layerKind, measure, showPriority, obesityMedian }: Prop
           <p>
             <span className="swatch outline" style={{ borderColor: INK }} aria-hidden="true" />
             {PRIORITY_EXPLANATION}
-            {obesityMedian !== null && ` (median: ${obesityMedian}%)`}
           </p>
+          <p className="hint">{medianText(obesityMedians, selectedCounty)}</p>
           <p className="hint">{NOT_CAUSATION}</p>
         </div>
       )}
