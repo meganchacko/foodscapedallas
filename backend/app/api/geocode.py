@@ -18,8 +18,9 @@ def get_geocoder(cache: Annotated[Redis, Depends(get_redis)]) -> NominatimGeocod
 @router.get(
     "/geocode",
     response_model=GeocodeResponse,
-    # protects Nominatim, which allows us 1 request per second in total
-    dependencies=[Depends(RateLimit("geocode", per_minute=30))],
+    # Protects Nominatim, which allows us 1 request per second (60 a minute) for the whole site.
+    # Kept well under that, so it takes several clients searching flat out to use it all up.
+    dependencies=[Depends(RateLimit("geocode", per_minute=10))],
 )
 def geocode(
     q: Annotated[str, Query(min_length=3, max_length=200, description="Address or place name")],
@@ -36,7 +37,8 @@ def geocode(
     except GeocoderUnavailable:
         raise HTTPException(
             status.HTTP_503_SERVICE_UNAVAILABLE,
-            "Address search is busy right now. Please try again in a moment.",
+            "Address search is busy right now. Please try again in a moment, "
+            'or use "Use my location" instead.',
         ) from None
     cache_header = {"X-Cache": "HIT" if lookup.from_cache else "MISS"}
     if lookup.result is None:

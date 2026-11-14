@@ -7,7 +7,7 @@ from app.config import get_settings
 from app.main import app
 from app.services.geocoding import NominatimGeocoder
 
-GEOCODE_LIMIT = 30
+GEOCODE_LIMIT = 10
 
 
 @pytest.fixture

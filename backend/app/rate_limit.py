@@ -53,7 +53,7 @@ def client_key(request: Request) -> str:
 
 
 class RateLimit:
-    """A FastAPI dependency: Depends(RateLimit("geocode", per_minute=30))."""
+    """A FastAPI dependency: Depends(RateLimit("geocode", per_minute=10))."""
 
     def __init__(self, name: str, per_minute: int):
         self.name = name
