@@ -42,9 +42,9 @@ services:
       POSTGRES_PORT: 5432
       REDIS_HOST: redis
       REDIS_PORT: 6379
-      # Trust X-Forwarded-For (the real client IP, used for rate limiting) only from the Docker
-      # network, where the Vite proxy runs. Production sets its load balancer's addresses.
-      FORWARDED_ALLOW_IPS: 172.16.0.0/12
+      # Requests come through one proxy (Vite), which adds the browser's IP to X-Forwarded-For.
+      # The rate limiter trusts only that last entry (see backend/app/rate_limit.py).
+      TRUSTED_PROXY_HOPS: 1
       # Off only for load tests: RATE_LIMIT_ENABLED=false docker compose up -d backend
       RATE_LIMIT_ENABLED: ${RATE_LIMIT_ENABLED:-true}
     ports:

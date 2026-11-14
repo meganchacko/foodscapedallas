@@ -25,15 +25,31 @@ logger = logging.getLogger(__name__)
 WINDOW_SECONDS = 60
 
 
-def client_key(request: Request) -> str:
-    """Identify the client without storing their IP: a short hash of it.
+def client_ip(request: Request) -> str:
+    """The IP of the person making the request.
 
-    request.client is the connecting IP. Behind a proxy (Vite in development, a load balancer in
-    production) uvicorn replaces it with the original IP from X-Forwarded-For, but only for
-    proxies listed in FORWARDED_ALLOW_IPS, so clients can't fake their IP with that header.
+    Without a proxy, that's the connecting IP (request.client). Behind one (the Vite dev server,
+    Azure's ingress), the connecting IP is the proxy's, and the real one is in X-Forwarded-For.
+    Each proxy APPENDS the address it received the request from, e.g.
+
+        X-Forwarded-For: <anything the client sent>, <IP our proxy saw>
+
+    The client controls the start of that list, so only the entries our own proxies added (the
+    last TRUSTED_PROXY_HOPS of them) can be believed. With one proxy, that's the last entry.
     """
-    host = request.client.host if request.client else "unknown"
-    return hashlib.sha256(host.encode()).hexdigest()[:16]
+    hops = get_settings().trusted_proxy_hops
+    if hops > 0:
+        # A client may send several X-Forwarded-For headers; together they form one list
+        forwarded = ",".join(request.headers.getlist("X-Forwarded-For"))
+        addresses = [address.strip() for address in forwarded.split(",") if address.strip()]
+        if len(addresses) >= hops:
+            return addresses[-hops]
+    return request.client.host if request.client else "unknown"
+
+
+def client_key(request: Request) -> str:
+    """Identify the client without storing their IP: a short hash of it."""
+    return hashlib.sha256(client_ip(request).encode()).hexdigest()[:16]
 
 
 class RateLimit:

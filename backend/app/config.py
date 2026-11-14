@@ -29,6 +29,11 @@ class Settings(BaseSettings):
     # deployed frontend's address. Empty locally, where the Vite proxy makes calls same-origin.
     allowed_origins: str = ""
 
+    # How many proxies in front of the API add the client's IP to X-Forwarded-For: 1 behind the
+    # Vite dev proxy or Azure's ingress, 0 when clients connect directly. The rate limiter uses
+    # it to find the real client IP (see app/rate_limit.py).
+    trusted_proxy_hops: int = 0
+
     # Turned off for load tests (one machine sends every request) and in the test suite
     rate_limit_enabled: bool = True
 

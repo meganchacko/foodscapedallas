@@ -67,3 +67,44 @@ def test_the_health_endpoint_is_not_limited(limited):
     client = TestClient(app)
 
     assert all(client.get("/health").status_code != 429 for _ in range(100))
+
+
+@pytest.fixture
+def behind_one_proxy(monkeypatch):
+    """Like production: one proxy (Azure's ingress) appends the client's IP to X-Forwarded-For."""
+    monkeypatch.setattr(get_settings(), "trusted_proxy_hops", 1)
+
+
+def search_via_proxy(client: TestClient, forwarded_for: str):
+    return client.get(
+        "/geocode", params={"q": "Fair Park"}, headers={"X-Forwarded-For": forwarded_for}
+    )
+
+
+def test_a_faked_forwarded_for_does_not_reset_the_limit(limited, behind_one_proxy):
+    client = TestClient(app)
+    # The attacker puts a new made-up IP first each time; the proxy appends their real one
+    statuses = [
+        search_via_proxy(client, f"10.0.0.{n}, 198.51.100.7").status_code
+        for n in range(GEOCODE_LIMIT + 1)
+    ]
+
+    assert statuses[-1] == 429
+
+
+def test_clients_behind_the_proxy_are_told_apart(limited, behind_one_proxy):
+    client = TestClient(app)
+    for _ in range(GEOCODE_LIMIT + 1):
+        search_via_proxy(client, "198.51.100.7")
+
+    assert search_via_proxy(client, "198.51.100.8").status_code != 429
+
+
+def test_forwarded_for_is_ignored_without_a_proxy(limited):
+    # trusted_proxy_hops is 0: anyone could send the header, so it must not pick the client
+    client = TestClient(app)
+    statuses = [
+        search_via_proxy(client, f"198.51.100.{n}").status_code for n in range(GEOCODE_LIMIT + 1)
+    ]
+
+    assert statuses[-1] == 429

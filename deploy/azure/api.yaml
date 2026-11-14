@@ -43,10 +43,11 @@ properties:
             value: localhost
           - name: ALLOWED_ORIGINS
             value: ${FRONTEND_URL}
-          # Only Azure's front door (ingress) can reach the container, so trust the client IP
-          # it forwards in X-Forwarded-For (used for rate limiting)
-          - name: FORWARDED_ALLOW_IPS
-            value: "*"
+          # Azure's ingress is the one proxy in front of the API: it appends the client's IP to
+          # X-Forwarded-For. The rate limiter trusts only that last entry, since a client can
+          # put anything before it (see backend/app/rate_limit.py).
+          - name: TRUSTED_PROXY_HOPS
+            value: "1"
         probes:
           - type: Readiness
             httpGet:
