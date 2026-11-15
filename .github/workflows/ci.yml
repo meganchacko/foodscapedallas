@@ -1,5 +1,9 @@
 name: CI
 
+# Actions are pinned to a commit SHA, not a tag like @v5: a tag can be moved to different code
+# (e.g. if an action's repo is hacked), a commit can't. That matters most for the deploy job,
+# which holds the Azure login. Dependabot opens a PR when a new version comes out.
+
 on:
   push:
     branches: [main]
@@ -9,8 +13,8 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-python@v6
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
         with:
           python-version: "3.12"
       - run: pip install ruff==0.16.10
@@ -50,8 +54,8 @@ jobs:
       POSTGRES_HOST: localhost
       REDIS_HOST: localhost
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-python@v6
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
         with:
           python-version: "3.12"
           cache: pip
@@ -69,8 +73,8 @@ jobs:
       run:
         working-directory: frontend
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-node@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version: "24"
           cache: npm
@@ -83,7 +87,7 @@ jobs:
   docker-build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
       - run: docker build -f backend/Dockerfile -t foodscape-backend .
       - run: docker build -f pipeline/Dockerfile -t foodscape-pipeline .
       - run: docker build -t foodscape-frontend ./frontend
@@ -102,7 +106,7 @@ jobs:
       BACKEND_IMAGE: ghcr.io/${{ github.repository_owner }}/foodscape-backend
       PIPELINE_IMAGE: ghcr.io/${{ github.repository_owner }}/foodscape-pipeline
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
 
       - name: Build and push images, tagged with the commit
         run: |
@@ -112,7 +116,7 @@ jobs:
           docker push "$BACKEND_IMAGE:${{ github.sha }}"
           docker push "$PIPELINE_IMAGE:${{ github.sha }}"
 
-      - uses: azure/login@v2
+      - uses: azure/login@7184910d9eb2b1c5e48f7073824a90609bb9b6d6 # v2.3.1
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
@@ -124,7 +128,7 @@ jobs:
           az extension add --name containerapp --upgrade --only-show-errors
           deploy/azure/deploy.sh "${{ github.sha }}"
 
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version: "24"
           cache: npm
@@ -151,7 +155,7 @@ jobs:
           if grep -q __API_ORIGIN__ dist/staticwebapp.config.json; then exit 1; fi
 
       - name: Publish the frontend
-        uses: Azure/static-web-apps-deploy@v1
+        uses: Azure/static-web-apps-deploy@4d27395796ac319302594769cfe812bd207490b1 # v1
         with:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
           action: upload

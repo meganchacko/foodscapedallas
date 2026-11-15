@@ -59,7 +59,9 @@ properties:
               port: 8000
             periodSeconds: 10
       - name: redis
-        image: docker.io/library/redis:7
+        # Pinned to an exact image (digest), so a changed "redis:7" can't slip into production.
+        # To update: docker buildx imagetools inspect redis:7 (the first Digest line)
+        image: docker.io/library/redis:7@sha256:2e3eb11462c4e3759e6972678dd051d150ff54b1e60714b3c33b701260172a90
         resources:
           cpu: 0.25
           memory: 0.5Gi

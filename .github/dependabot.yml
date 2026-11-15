@@ -1,0 +1,8 @@
+# Opens a pull request when an action in .github/workflows has a new version, updating the
+# pinned commit SHA and its version comment. CI runs on the PR like any other change.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
