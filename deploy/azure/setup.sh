@@ -83,8 +83,9 @@ az role assignment create --assignee-object-id "$IDENTITY_PRINCIPAL" \
 step "PostgreSQL $DB_SERVER with PostGIS (free 12 months on new accounts, then ~\$13/month)"
 if ! az postgres flexible-server show --name "$DB_SERVER" --resource-group "$RESOURCE_GROUP" \
     --output none 2>/dev/null; then
-  # --public-access 0.0.0.0 allows connections only from Azure services (not the internet).
-  # Every connection must also be encrypted and use the password.
+  # --public-access 0.0.0.0 allows connections from Azure services, not the open internet. That
+  # means ANY Azure customer's services, not just ours, so the real protection is that every
+  # connection must be encrypted and use a password (see deploy/README.md, "Network access").
   az postgres flexible-server create --name "$DB_SERVER" --resource-group "$RESOURCE_GROUP" \
     --location "$LOCATION" --tier Burstable --sku-name Standard_B1ms --storage-size 32 \
     --version 16 --admin-user "$DB_ADMIN" --admin-password "$POSTGRES_PASSWORD" \

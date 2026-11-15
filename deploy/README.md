@@ -41,6 +41,16 @@ Push to `main`. Migrations run first; if they fail, the old version keeps runnin
 - **Redis** runs as a sidecar container inside the API app, since it only holds disposable data (caches and rate-limit counts). The API is capped at one replica so rate limits stay exact. The weekly pipeline can't reach the sidecar to clear the map cache, so new data appears within 24 hours (the cache's expiry).
 - **Scale to zero:** when nobody uses the site, the API stops and costs nothing; the first request afterwards takes a few seconds while it starts.
 
+## Network access to the database: a deliberate trade-off
+
+The database's firewall rule is "allow Azure services" (`--public-access 0.0.0.0`). That keeps out the open internet, but it lets in **any** Azure customer's services, not only ours. What actually protects the data:
+
+- a 32-character random password (Key Vault), and encrypted connections only;
+- the API's role can only read map data and add saved health checks, so even a compromised API can't damage the database;
+- the data is mostly public (Census, USDA, CDC, OpenStreetMap). The sensitive part, opted-in health check answers, has no names, emails, or IPs.
+
+**The stronger option** is a private network: put the Container Apps environment and the database in an Azure virtual network, so the database has no public address at all. It wasn't chosen because both resources would have to be recreated (Azure can't move them into a network afterwards), and it adds a private DNS zone (under $1/month; check current pricing). For a site at this scale, the password, encryption, and least-privilege role are a reasonable defense. A site holding identifiable health data should use the private network.
+
 ## Custom domain
 
 The site is at https://foodscape.site (registered at Namecheap), as well as its Azure address. Namecheap's DNS has a TXT record proving ownership, an ALIAS record pointing `foodscape.site` at the Static Web App, and a CNAME for `www`. Azure provides the HTTPS certificate for free. `deploy.sh` adds every custom domain linked to the Static Web App to the API's allowed origins, so linking a new one only needs a redeploy.
