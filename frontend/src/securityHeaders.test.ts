@@ -19,3 +19,11 @@ describe('Content-Security-Policy', () => {
     expect(csp).toMatch(/connect-src 'self' __API_ORIGIN__/)
   })
 })
+
+describe('Referrer-Policy', () => {
+  // The CARTO map key is restricted to our domains, which CARTO checks using the Referer header.
+  // "no-referrer" would make CARTO refuse every map tile.
+  it('still tells CARTO which site is asking for tiles', () => {
+    expect(config.globalHeaders['Referrer-Policy']).toBe('strict-origin-when-cross-origin')
+  })
+})

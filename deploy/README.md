@@ -55,6 +55,16 @@ The database's firewall rule is "allow Azure services" (`--public-access 0.0.0.0
 
 The site is at https://foodscape.site (registered at Namecheap), as well as its Azure address. Namecheap's DNS has a TXT record proving ownership, an ALIAS record pointing `foodscape.site` at the Static Web App, and a CNAME for `www`. Azure provides the HTTPS certificate for free. `deploy.sh` adds every custom domain linked to the Static Web App to the API's allowed origins, so linking a new one only needs a redeploy.
 
+## The CARTO map key
+
+The base map's API key is sent from the browser, so anyone can read it from the page and use it elsewhere, using up our monthly quota (5 million requests, non-commercial). CARTO can limit a key to listed websites; it checks the browser's `Referer` header. Set this up in the [Basemaps dashboard](https://dashboard.basemaps.carto.com/) (sign-in is an emailed link):
+
+1. Open the production key (the one in the `CARTO_API_KEY` GitHub secret) and add website restrictions for: `foodscape.site`, `www.foodscape.site`, and the Static Web App's own address (`az staticwebapp show --name <name> --query defaultHostname -o tsv`). Hosts must match exactly: `*.foodscape.site` doesn't cover `foodscape.site`.
+2. A restricted key can't list both `localhost` and public sites, so create a **second key** for local development, restricted to `localhost`, and put that one in `.env`.
+3. Open the live site and check the map tiles load (a 403 on tile requests means a host is missing).
+
+The site's `Referrer-Policy` (`strict-origin-when-cross-origin`) sends our domain with tile requests, which CARTO needs; `no-referrer` would break the map (`frontend/src/securityHeaders.test.ts` guards this). A `Referer` can be faked outside a browser, so this stops casual reuse, not a determined attacker; the dashboard also shows usage per key.
+
 ## Removing everything
 
 ```bash
