@@ -39,6 +39,10 @@ class Settings(BaseSettings):
     # it to find the real client IP (see app/rate_limit.py).
     trusted_proxy_hops: int = 0
 
+    # The interactive API docs (/docs, /redoc, /openapi.json). On locally; off in production,
+    # where they'd only help someone probing the API.
+    api_docs_enabled: bool = True
+
     # Turned off for load tests (one machine sends every request) and in the test suite
     rate_limit_enabled: bool = True
 

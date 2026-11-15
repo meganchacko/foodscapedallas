@@ -63,10 +63,12 @@ def test_requests_are_allowed_if_redis_is_down(limited):
     assert 429 not in statuses
 
 
-def test_the_health_endpoint_is_not_limited(limited):
+def test_the_health_endpoint_allows_azures_probe_but_is_limited(limited):
     client = TestClient(app)
+    statuses = [client.get("/health").status_code for _ in range(61)]
 
-    assert all(client.get("/health").status_code != 429 for _ in range(100))
+    assert 429 not in statuses[:60]  # the readiness probe only needs 6 a minute
+    assert statuses[-1] == 429
 
 
 @pytest.fixture

@@ -21,7 +21,16 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     yield
 
 
-app = FastAPI(title="FoodScape Dallas API", lifespan=lifespan)
+def docs_options(enabled: bool) -> dict[str, str | None]:
+    """FastAPI serves its docs pages by default; setting their URLs to None turns them off."""
+    return {} if enabled else {"docs_url": None, "redoc_url": None, "openapi_url": None}
+
+
+app = FastAPI(
+    title="FoodScape Dallas API",
+    lifespan=lifespan,
+    **docs_options(get_settings().api_docs_enabled),
+)
 
 # Compress responses over 1 KB when the browser accepts gzip. Map data is mostly repeated
 # coordinate text, which compresses to a fraction of its size.

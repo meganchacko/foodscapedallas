@@ -47,6 +47,9 @@ properties:
           # Azure's ingress is the one proxy in front of the API: it appends the client's IP to
           # X-Forwarded-For. The rate limiter trusts only that last entry, since a client can
           # put anything before it (see backend/app/rate_limit.py).
+          # No interactive API docs on the live site (they're still on locally)
+          - name: API_DOCS_ENABLED
+            value: "false"
           - name: TRUSTED_PROXY_HOPS
             value: "1"
         probes:

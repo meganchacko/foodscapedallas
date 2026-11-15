@@ -9,6 +9,7 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from app.cache import get_redis
 from app.db.database import get_engine
+from app.rate_limit import RateLimit
 from app.schemas.health import HealthResponse
 
 logger = logging.getLogger(__name__)
@@ -34,7 +35,13 @@ def check_cache(cache: Redis) -> bool:
         return False
 
 
-@router.get("/health", response_model=HealthResponse)
+@router.get(
+    "/health",
+    response_model=HealthResponse,
+    # Each call queries the database and Redis, so cap it like the other endpoints. Azure's
+    # readiness probe calls it 6 times a minute, well under the limit.
+    dependencies=[Depends(RateLimit("health", limit=60))],
+)
 def health(
     response: Response,
     engine: Annotated[Engine, Depends(get_engine)],
