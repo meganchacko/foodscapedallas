@@ -2,8 +2,12 @@ import math
 import uuid
 
 import pytest
+from fastapi.testclient import TestClient
 from sqlalchemy import text
 
+from app.api import health_check as health_check_api
+from app.cache import create_redis, get_redis
+from app.config import get_settings
 from app.db.database import get_engine
 from app.main import app
 from app.schemas.health_check import HealthCheckRequest
@@ -168,3 +172,51 @@ def test_api_choices_match_the_answers_the_model_was_trained_on():
     assert allowed("snacking") == set(model.categories["CAEC"])
     assert allowed("alcohol") == set(model.categories["CALC"])
     assert allowed("transportation") == set(model.categories["MTRANS"])
+
+
+@pytest.fixture
+def limited_saves(monkeypatch, test_redis, clean_engine):
+    """Rate limiting on (it's off in other tests), counting in the test Redis database."""
+    monkeypatch.setattr(get_settings(), "rate_limit_enabled", True)
+    app.dependency_overrides[get_engine] = lambda: clean_engine
+    app.dependency_overrides[get_redis] = lambda: test_redis
+    yield
+    app.dependency_overrides.clear()
+
+
+def save(client: TestClient):
+    return client.post(
+        "/health-check", json={**ANSWERS, "save": True, "anonymous_id": str(uuid.uuid4())}
+    )
+
+
+def test_one_client_can_only_save_a_few_results_an_hour(limited_saves, clean_engine):
+    client = TestClient(app)
+    responses = [save(client) for _ in range(health_check_api.SAVES_PER_CLIENT_PER_HOUR + 1)]
+
+    assert all(r.json()["saved"] for r in responses[:-1])
+    over = responses[-1]
+    assert over.status_code == 200  # they still get their estimate
+    assert over.json()["saved"] is False
+    assert health_check_api.NOT_SAVED_NOTE in over.json()["notes"]
+    assert len(saved_rows(clean_engine)) == health_check_api.SAVES_PER_CLIENT_PER_HOUR
+
+
+def test_saves_are_capped_across_all_clients(limited_saves, monkeypatch, clean_engine):
+    monkeypatch.setattr(health_check_api, "SAVES_PER_DAY", 2)
+    clients = [TestClient(app, client=(f"203.0.113.{n}", 50000)) for n in range(3)]
+
+    saved = [save(client).json()["saved"] for client in clients]
+
+    assert saved == [True, True, False]
+    assert len(saved_rows(clean_engine)) == 2
+
+
+def test_nothing_is_saved_if_the_limiter_is_down(limited_saves, clean_engine):
+    app.dependency_overrides[get_redis] = lambda: create_redis("localhost", 1)
+
+    response = save(TestClient(app))
+
+    assert response.status_code == 200
+    assert response.json()["saved"] is False
+    assert saved_rows(clean_engine) == []

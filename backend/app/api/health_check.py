@@ -1,47 +1,75 @@
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
+from redis import Redis
 from sqlalchemy import Engine, insert
 
+from app.cache import get_redis
 from app.db.database import get_engine
 from app.db.models import HealthCheck
-from app.rate_limit import RateLimit
+from app.rate_limit import RateLimit, allow, client_key
 from app.schemas.health_check import HealthCheckRequest, HealthCheckResponse
 from app.services.health_check import HealthModel, get_health_model, get_model_card
 
 router = APIRouter()
 
+# Saving is optional, so it has its own, much lower limits: enough for a person to save a few
+# results, too few for a script to fill the database. Past either one, the user still gets their
+# result, just not saved.
+SAVES_PER_CLIENT_PER_HOUR = 10
+SAVES_PER_DAY = 2000
+NOT_SAVED_NOTE = "Your answers couldn't be saved right now. Your estimate above is unaffected."
+
+
+def save_allowed(request: Request, cache: Redis) -> bool:
+    """Within this client's hourly limit and the site's daily limit?
+
+    Fails closed: if Redis is down, nothing is saved (the result is still returned), since an
+    unlimited burst of saves while the limiter is out would defeat the point. The client's limit
+    is checked first, so one client hitting theirs doesn't use up everyone's daily allowance.
+    """
+    client = f"health_check_save:{client_key(request)}"
+    within_client_limit = allow(cache, client, SAVES_PER_CLIENT_PER_HOUR, 60 * 60, fail_open=False)
+    # "and" stops early: the site-wide count only goes up for clients within their own limit
+    return within_client_limit and allow(
+        cache, "health_check_save:all", SAVES_PER_DAY, 24 * 60 * 60, fail_open=False
+    )
+
 
 @router.post(
     "/health-check",
     response_model=HealthCheckResponse,
-    dependencies=[Depends(RateLimit("health_check", per_minute=20))],
+    dependencies=[Depends(RateLimit("health_check", limit=20))],
 )
 def health_check(
-    request: HealthCheckRequest,
+    answers: HealthCheckRequest,
+    request: Request,
     model: Annotated[HealthModel, Depends(get_health_model)],
     engine: Annotated[Engine, Depends(get_engine)],
+    cache: Annotated[Redis, Depends(get_redis)],
 ) -> HealthCheckResponse:
     """Estimate the likelihood of obesity from habits and background (no height or weight).
 
     Educational, not medical advice. Nothing is stored unless `save` is true; then only the
     answers, the result, the model version, and the browser's random anonymous ID are kept.
     """
-    result = model.check(request)
+    result = model.check(answers)
 
-    if request.save:
+    if answers.save and save_allowed(request, cache):
         with engine.begin() as connection:
             connection.execute(
                 insert(HealthCheck).values(
                     id=uuid.uuid4(),
-                    anonymous_id=request.anonymous_id,
-                    inputs=request.model_dump(exclude={"save", "anonymous_id"}),
+                    anonymous_id=answers.anonymous_id,
+                    inputs=answers.model_dump(exclude={"save", "anonymous_id"}),
                     probability=result.probability,
                     model_version=result.model_version,
                 )
             )
         result.saved = True
+    elif answers.save:
+        result.notes.append(NOT_SAVED_NOTE)
 
     return result
 

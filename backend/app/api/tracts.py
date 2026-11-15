@@ -22,7 +22,7 @@ CACHE_TTL_SECONDS = 24 * 60 * 60
 @router.get(
     "/tracts",
     response_model=TractCollection,
-    dependencies=[Depends(RateLimit("tracts", per_minute=60))],
+    dependencies=[Depends(RateLimit("tracts", limit=60))],
 )
 def list_tracts(
     engine: Annotated[Engine, Depends(get_engine)],

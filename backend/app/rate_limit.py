@@ -1,11 +1,12 @@
-"""Rate limiting: cap how many requests one client can make per minute (429 when over).
+"""Rate limiting: cap how many requests a client can make in a time window (429 when over).
 
 Counts live in Redis so every server process shares them (with in-memory counts, running 4
 processes would quietly allow 4x the limit). It's a "fixed window" counter: one key per client,
-per endpoint, per minute, e.g. ratelimit:geocode:<client>:<minute>, which Redis deletes when
-the minute is over.
+per action, per window, e.g. ratelimit:geocode:<client>:<window number>, which Redis deletes
+when the window is over.
 
-Like the cache, it fails open: if Redis is down, requests are allowed rather than blocked.
+Request limits fail open: if Redis is down, requests are allowed rather than blocked. Callers
+can choose to fail closed instead (see allow()), for optional actions like saving a result.
 """
 
 import hashlib
@@ -21,8 +22,6 @@ from app.cache import get_redis
 from app.config import get_settings
 
 logger = logging.getLogger(__name__)
-
-WINDOW_SECONDS = 60
 
 
 def client_ip(request: Request) -> str:
@@ -52,27 +51,38 @@ def client_key(request: Request) -> str:
     return hashlib.sha256(client_ip(request).encode()).hexdigest()[:16]
 
 
-class RateLimit:
-    """A FastAPI dependency: Depends(RateLimit("geocode", per_minute=10))."""
+def allow(cache: Redis, key: str, limit: int, window_seconds: int, fail_open: bool = True) -> bool:
+    """Count one use of `key` in the current window, and say whether it's within `limit`.
 
-    def __init__(self, name: str, per_minute: int):
+    If Redis is unavailable, returns `fail_open`: True lets the action happen anyway (better for
+    requests people are waiting on), False blocks it (better for optional extras).
+    """
+    if not get_settings().rate_limit_enabled:
+        return True
+    window = int(time.time() // window_seconds)
+    window_key = f"ratelimit:{key}:{window}"
+    try:
+        # INCR and EXPIRE together in one transaction: count this use, and make sure the key is
+        # deleted once its window is over
+        count, _ = cache.pipeline().incr(window_key).expire(window_key, window_seconds).execute()
+    except RedisError:
+        logger.warning("Rate limiter unavailable; %s", "allowing" if fail_open else "blocking")
+        return fail_open
+    return count <= limit
+
+
+class RateLimit:
+    """A FastAPI dependency: Depends(RateLimit("geocode", limit=10, window_seconds=60))."""
+
+    def __init__(self, name: str, limit: int, window_seconds: int = 60):
         self.name = name
-        self.per_minute = per_minute
+        self.limit = limit
+        self.window_seconds = window_seconds
 
     def __call__(self, request: Request, cache: Annotated[Redis, Depends(get_redis)]) -> None:
-        if not get_settings().rate_limit_enabled:
-            return
-        window = int(time.time() // WINDOW_SECONDS)
-        key = f"ratelimit:{self.name}:{client_key(request)}:{window}"
-        try:
-            # INCR and EXPIRE together in one transaction: count this request, and make sure
-            # the key is deleted once its minute is over
-            count, _ = cache.pipeline().incr(key).expire(key, WINDOW_SECONDS).execute()
-        except RedisError:
-            logger.warning("Rate limiter unavailable; allowing the request")
-            return
-        if count > self.per_minute:
-            seconds_left = WINDOW_SECONDS - int(time.time() % WINDOW_SECONDS)
+        key = f"{self.name}:{client_key(request)}"
+        if not allow(cache, key, self.limit, self.window_seconds):
+            seconds_left = self.window_seconds - int(time.time() % self.window_seconds)
             raise HTTPException(
                 status.HTTP_429_TOO_MANY_REQUESTS,
                 "Too many requests. Please wait a minute and try again.",

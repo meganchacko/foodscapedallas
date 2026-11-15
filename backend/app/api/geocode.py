@@ -20,7 +20,7 @@ def get_geocoder(cache: Annotated[Redis, Depends(get_redis)]) -> NominatimGeocod
     response_model=GeocodeResponse,
     # Protects Nominatim, which allows us 1 request per second (60 a minute) for the whole site.
     # Kept well under that, so it takes several clients searching flat out to use it all up.
-    dependencies=[Depends(RateLimit("geocode", per_minute=10))],
+    dependencies=[Depends(RateLimit("geocode", limit=10))],
 )
 def geocode(
     q: Annotated[str, Query(min_length=3, max_length=200, description="Address or place name")],

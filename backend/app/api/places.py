@@ -16,7 +16,7 @@ router = APIRouter()
 @router.get(
     "/places",
     response_model=PlaceCollection,
-    dependencies=[Depends(RateLimit("places", per_minute=60))],
+    dependencies=[Depends(RateLimit("places", limit=60))],
 )
 def list_places(
     engine: Annotated[Engine, Depends(get_engine)],
@@ -32,7 +32,7 @@ def list_places(
 @router.get(
     "/places/nearby",
     response_model=NearbyResponse,
-    dependencies=[Depends(RateLimit("nearby", per_minute=60))],
+    dependencies=[Depends(RateLimit("nearby", limit=60))],
 )
 def list_nearby_places(
     engine: Annotated[Engine, Depends(get_engine)],
