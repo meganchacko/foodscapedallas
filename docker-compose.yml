@@ -1,5 +1,7 @@
 # Local development stack. Start everything with: docker compose up
 name: foodscape
+# Ports are published on 127.0.0.1 only: reachable from this computer, not from others on the
+# same network (e.g. public Wi-Fi). Local Postgres and Redis have simple or no passwords.
 services:
   db:
     image: postgis/postgis:16-3.5
@@ -7,7 +9,7 @@ services:
     platform: linux/amd64
     env_file: .env # the image reads POSTGRES_USER/PASSWORD/DB to create the user and database
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     volumes:
       - db-data:/var/lib/postgresql/data # named volume, so data survives container restarts
     healthcheck:
@@ -20,7 +22,7 @@ services:
   redis:
     image: redis:7
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -48,7 +50,7 @@ services:
       # Off only for load tests: RATE_LIMIT_ENABLED=false docker compose up -d backend
       RATE_LIMIT_ENABLED: ${RATE_LIMIT_ENABLED:-true}
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
     volumes:
       - ./backend/app:/app/app
       - ./backend/alembic:/app/alembic
@@ -66,7 +68,7 @@ services:
       # ${CARTO_API_KEY:-} reads CARTO_API_KEY from .env (empty if unset)
       VITE_CARTO_API_KEY: ${CARTO_API_KEY:-}
     ports:
-      - "5173:5173"
+      - "127.0.0.1:5173:5173"
     volumes:
       - ./frontend/src:/app/src # edits show up instantly via Vite's hot reload
     depends_on:
