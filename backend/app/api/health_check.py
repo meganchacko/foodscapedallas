@@ -1,15 +1,19 @@
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Header, Request
 from redis import Redis
-from sqlalchemy import Engine, insert
+from sqlalchemy import Engine, delete, insert
 
 from app.cache import get_redis
 from app.db.database import get_engine
 from app.db.models import HealthCheck
 from app.rate_limit import RateLimit, allow, client_key
-from app.schemas.health_check import HealthCheckRequest, HealthCheckResponse
+from app.schemas.health_check import (
+    DeleteSavedResponse,
+    HealthCheckRequest,
+    HealthCheckResponse,
+)
 from app.services.health_check import HealthModel, get_health_model, get_model_card
 
 router = APIRouter()
@@ -72,6 +76,28 @@ def health_check(
         result.notes.append(NOT_SAVED_NOTE)
 
     return result
+
+
+@router.delete(
+    "/health-checks",
+    response_model=DeleteSavedResponse,
+    dependencies=[Depends(RateLimit("health_check_delete", limit=10))],
+)
+def delete_saved_health_checks(
+    anonymous_id: Annotated[uuid.UUID, Header(alias="X-Anonymous-ID")],
+    engine: Annotated[Engine, Depends(get_engine)],
+) -> DeleteSavedResponse:
+    """Delete every saved result made with this browser's anonymous ID.
+
+    The random ID is the only key to someone's saved results, so it's sent in a header, not the
+    URL: URLs end up in server, proxy, and browser history logs. A random UUID can't be guessed,
+    so only the browser that saved the results can delete them.
+    """
+    with engine.begin() as connection:
+        result = connection.execute(
+            delete(HealthCheck).where(HealthCheck.anonymous_id == anonymous_id)
+        )
+    return DeleteSavedResponse(deleted=result.rowcount)
 
 
 @router.get("/model-card")

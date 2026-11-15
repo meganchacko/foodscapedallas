@@ -15,3 +15,22 @@ export function getAnonymousId(): string {
     return crypto.randomUUID()
   }
 }
+
+// The ID this browser saved results with, if any, without creating one
+export function savedAnonymousId(): string | null {
+  try {
+    return localStorage.getItem(STORAGE_KEY)
+  } catch {
+    return null
+  }
+}
+
+// After someone deletes their saved results, drop the ID too, so anything they save later isn't
+// linked to what they deleted
+export function forgetAnonymousId(): void {
+  try {
+    localStorage.removeItem(STORAGE_KEY)
+  } catch {
+    // storage unavailable: nothing was kept, so nothing to forget
+  }
+}

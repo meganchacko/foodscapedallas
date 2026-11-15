@@ -1,6 +1,6 @@
 import { type FormEvent, useState } from 'react'
-import { ApiError, checkHealth } from '../api'
-import { getAnonymousId } from '../anonymousId'
+import { ApiError, checkHealth, deleteSavedHealthChecks } from '../api'
+import { forgetAnonymousId, getAnonymousId, savedAnonymousId } from '../anonymousId'
 import {
   MAX_AGE,
   MIN_AGE,
@@ -113,6 +113,7 @@ export function HealthCheckView({ onFindPlaces, onShowModelCard }: Props) {
         Save my answers anonymously to help improve this tool (optional). We never store your name,
         location, or anything that identifies you.
       </label>
+      <DeleteSavedResults />
 
       {error && (
         <p className="error" role="alert">
@@ -196,6 +197,7 @@ function HealthCheckResultView({
       )}
 
       {result.saved && <p className="hint">Your answers were saved anonymously. Thank you.</p>}
+      <DeleteSavedResults />
       <p className="hint">{NOT_ADVICE}</p>
       <p className="hint">
         How the model works and where it falls short:{' '}
@@ -207,5 +209,54 @@ function HealthCheckResultView({
         Start over
       </button>
     </section>
+  )
+}
+
+// Shown only in a browser that has saved results: deletes all of them from the server
+function DeleteSavedResults() {
+  const [anonymousId, setAnonymousId] = useState(savedAnonymousId)
+  const [deleting, setDeleting] = useState(false)
+  const [deleted, setDeleted] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  async function onDelete() {
+    if (!anonymousId) return
+    setDeleting(true)
+    setError(null)
+    try {
+      await deleteSavedHealthChecks(anonymousId)
+      forgetAnonymousId()
+      setAnonymousId(null)
+      setDeleted(true)
+    } catch (err) {
+      // The button stays, so they can try again
+      setError(err instanceof ApiError ? err.message : "Couldn't reach the server.")
+    } finally {
+      setDeleting(false)
+    }
+  }
+
+  if (deleted) {
+    return (
+      <p className="hint" role="status">
+        Your saved answers were deleted.
+      </p>
+    )
+  }
+  if (!anonymousId) return null
+  return (
+    <>
+      <p className="hint">
+        You've saved answers from this browser.{' '}
+        <button type="button" className="link-button" onClick={onDelete} disabled={deleting}>
+          {deleting ? 'Deleting…' : 'Delete my saved answers'}
+        </button>
+      </p>
+      {error && (
+        <p className="error" role="alert">
+          {error}
+        </p>
+      )}
+    </>
   )
 }

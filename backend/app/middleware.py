@@ -80,8 +80,8 @@ def configure_cors(app: FastAPI, allowed_origins: list[str]) -> None:
     app.add_middleware(
         CORSMiddleware,
         allow_origins=allowed_origins,
-        allow_methods=["GET", "POST"],
-        allow_headers=["Content-Type", "X-Request-ID"],
+        allow_methods=["GET", "POST", "DELETE"],
+        allow_headers=["Content-Type", "X-Request-ID", "X-Anonymous-ID"],
         # let the frontend read these response headers (browsers hide most of them cross-origin)
         expose_headers=["X-Cache", "X-Request-ID", "Retry-After", "Server-Timing"],
     )

@@ -70,3 +70,7 @@ class HealthCheckResponse(BaseModel):
     suggestion: ResourceSuggestion | None
     notes: list[str]  # caveats that apply to these answers
     saved: bool
+
+
+class DeleteSavedResponse(BaseModel):
+    deleted: int  # how many saved results were removed (0 if there were none)

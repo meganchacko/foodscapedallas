@@ -45,3 +45,18 @@ def test_passwords_with_special_characters_are_escaped():
 
     assert "p%40ss%2Fword%231" in url
     assert url.endswith("?sslmode=prefer")
+
+
+def test_the_frontend_may_send_a_delete_with_the_anonymous_id_header():
+    # A cross-site DELETE with a custom header needs the browser's "preflight" check to pass
+    response = client_allowing([FRONTEND]).options(
+        "/ping",
+        headers={
+            "Origin": FRONTEND,
+            "Access-Control-Request-Method": "DELETE",
+            "Access-Control-Request-Headers": "X-Anonymous-ID",
+        },
+    )
+
+    assert response.status_code == 200
+    assert "DELETE" in response.headers["access-control-allow-methods"]

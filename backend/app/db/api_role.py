@@ -1,8 +1,9 @@
 """Creates the database role the API logs in as, with only the permissions it needs.
 
-Least privilege: the API only reads map data and adds saved health checks, so its role can do
-exactly that. If the API were ever compromised, the attacker couldn't drop tables, change map
-data, or create anything. Migrations and the data pipeline keep using the admin role.
+Least privilege: the API only reads map data, adds saved health checks, and deletes them when
+the person who saved them asks, so its role can do exactly that. If the API were ever
+compromised, the attacker couldn't drop tables, change map data, or create anything. Migrations
+and the data pipeline keep using the admin role.
 
 Run after every migration (deploy/azure runs `migrate.sh` as a job), so tables added by a new
 migration are covered:
@@ -45,7 +46,8 @@ def grant_api_role(engine: Engine, user: str, password: str) -> None:
         # Start from nothing, so a permission removed from this list doesn't linger
         sql.SQL("REVOKE ALL ON ALL TABLES IN SCHEMA public FROM {role}").format(role=role),
         sql.SQL("GRANT SELECT ON ALL TABLES IN SCHEMA public TO {role}").format(role=role),
-        sql.SQL("GRANT INSERT ON health_checks TO {role}").format(role=role),
+        # Insert to save a result, delete for "delete my saved results"
+        sql.SQL("GRANT INSERT, DELETE ON health_checks TO {role}").format(role=role),
     ]
     with engine.begin() as connection:
         cursor = connection.connection.cursor()  # the underlying psycopg connection

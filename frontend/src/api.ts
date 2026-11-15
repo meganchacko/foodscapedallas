@@ -88,6 +88,16 @@ export function checkHealth(
   })
 }
 
+// Deletes every result saved with this anonymous ID. The ID goes in a header, not the URL,
+// because URLs end up in logs and it's the only key to someone's saved results.
+export async function deleteSavedHealthChecks(anonymousId: string): Promise<{ deleted: number }> {
+  const response = await fetch(apiUrl('/health-checks'), {
+    method: 'DELETE',
+    headers: { 'X-Anonymous-ID': anonymousId },
+  })
+  return readJson<{ deleted: number }>(response, '/health-checks')
+}
+
 export function fetchModelCard(): Promise<ModelCard> {
   return getJson<ModelCard>('/model-card')
 }

@@ -220,3 +220,34 @@ def test_nothing_is_saved_if_the_limiter_is_down(limited_saves, clean_engine):
     assert response.status_code == 200
     assert response.json()["saved"] is False
     assert saved_rows(clean_engine) == []
+
+
+def save_with_id(api, anonymous_id: str):
+    response = api.post(
+        "/health-check", json={**ANSWERS, "save": True, "anonymous_id": anonymous_id}
+    )
+    assert response.json()["saved"] is True
+
+
+def test_deleting_removes_only_this_browsers_saved_results(api, clean_engine):
+    mine, someone_elses = str(uuid.uuid4()), str(uuid.uuid4())
+    save_with_id(api, mine)
+    save_with_id(api, mine)
+    save_with_id(api, someone_elses)
+
+    response = api.delete("/health-checks", headers={"X-Anonymous-ID": mine})
+
+    assert response.status_code == 200
+    assert response.json() == {"deleted": 2}
+    assert [str(row["anonymous_id"]) for row in saved_rows(clean_engine)] == [someone_elses]
+
+
+def test_deleting_with_nothing_saved_deletes_nothing(api):
+    response = api.delete("/health-checks", headers={"X-Anonymous-ID": str(uuid.uuid4())})
+
+    assert response.json() == {"deleted": 0}
+
+
+@pytest.mark.parametrize("headers", [{}, {"X-Anonymous-ID": "not-a-uuid"}])
+def test_deleting_needs_a_valid_anonymous_id(api, headers):
+    assert api.delete("/health-checks", headers=headers).status_code == 422

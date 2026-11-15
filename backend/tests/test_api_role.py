@@ -41,9 +41,10 @@ def test_the_api_role_can_read_map_data(api_engine):
         connection.execute(text("SELECT count(*) FROM places"))
 
 
-def test_the_api_role_can_save_a_health_check(api_engine):
+def test_the_api_role_can_save_and_delete_health_checks(api_engine):
     with api_engine.begin() as connection:
         insert_health_check(connection)
+        connection.execute(text("DELETE FROM health_checks"))
 
 
 @pytest.mark.parametrize(
