@@ -41,21 +41,34 @@ JOB_ENV=(
 )
 DB_SECRET="postgres-password=keyvaultref:${KEY_VAULT_URI}/postgres-password,identityref:${IDENTITY_ID}"
 CENSUS_SECRET="census-api-key=keyvaultref:${KEY_VAULT_URI}/census-api-key,identityref:${IDENTITY_ID}"
+API_DB_SECRET="postgres-api-password=keyvaultref:${KEY_VAULT_URI}/postgres-api-password,identityref:${IDENTITY_ID}"
+# The migrate job runs as the admin and also creates the API's limited role, so it needs the
+# role's name and password too
+MIGRATE_ENV=(
+  "${JOB_ENV[@]}" "API_POSTGRES_USER=$API_DB_USER"
+  "API_POSTGRES_PASSWORD=secretref:postgres-api-password"
+)
 
 job_exists() {
   az containerapp job show --name "$1" --resource-group "$RESOURCE_GROUP" --output none 2>/dev/null
 }
 
 step "Migrations ($MIGRATE_JOB)"
+# migrate.sh: alembic upgrade head, then grant the API's role (backend/app/db/api_role.py)
 if job_exists "$MIGRATE_JOB"; then
+  # Secrets, settings, and command are set on every deploy (not just at creation), so changes
+  # to them reach a job that already exists
+  az containerapp job secret set --name "$MIGRATE_JOB" --resource-group "$RESOURCE_GROUP" \
+    --secrets "$DB_SECRET" "$API_DB_SECRET" --output none
   az containerapp job update --name "$MIGRATE_JOB" --resource-group "$RESOURCE_GROUP" \
-    --image "$BACKEND_IMAGE_REF" --output none
+    --image "$BACKEND_IMAGE_REF" --set-env-vars "${MIGRATE_ENV[@]}" \
+    --command /app/migrate.sh --args "" --output none
 else
   az containerapp job create --name "$MIGRATE_JOB" --resource-group "$RESOURCE_GROUP" \
     --environment "$ENVIRONMENT" --trigger-type Manual --replica-timeout 600 \
     --replica-retry-limit 0 --image "$BACKEND_IMAGE_REF" --cpu 0.5 --memory 1Gi \
-    --mi-user-assigned "$IDENTITY_ID" --secrets "$DB_SECRET" --env-vars "${JOB_ENV[@]}" \
-    --command alembic --args upgrade head --output none
+    --mi-user-assigned "$IDENTITY_ID" --secrets "$DB_SECRET" "$API_DB_SECRET" \
+    --env-vars "${MIGRATE_ENV[@]}" --command /app/migrate.sh --output none
 fi
 EXECUTION="$(az containerapp job start --name "$MIGRATE_JOB" \
   --resource-group "$RESOURCE_GROUP" --query name -o tsv)"
@@ -72,7 +85,7 @@ echo "Migrations: $STATUS"
 
 step "API ($API_APP)"
 export LOCATION IDENTITY_ID ENVIRONMENT_ID KEY_VAULT_URI BACKEND_IMAGE_REF DB_HOST DB_NAME \
-  DB_ADMIN FRONTEND_URL
+  API_DB_USER FRONTEND_URL
 # Fill in the ${...} placeholders in api.yaml from the variables above
 python3 -c 'import os, sys; sys.stdout.write(os.path.expandvars(sys.stdin.read()))' \
   < api.yaml > /tmp/foodscape-api.yaml

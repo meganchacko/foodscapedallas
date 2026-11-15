@@ -10,6 +10,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY backend/alembic.ini .
 COPY backend/alembic ./alembic
+COPY --chmod=755 backend/migrate.sh .
 COPY backend/app ./app
 COPY ml/model ./model
 

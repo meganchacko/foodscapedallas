@@ -4,6 +4,7 @@
 !backend/requirements.txt
 !backend/alembic.ini
 !backend/alembic/
+!backend/migrate.sh
 !backend/app/
 !ml/model/
 !pipeline/

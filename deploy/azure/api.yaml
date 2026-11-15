@@ -18,8 +18,9 @@ properties:
       allowInsecure: false # HTTPS only
     secrets:
       # Read from Key Vault through the managed identity; never stored in this file
-      - name: postgres-password
-        keyVaultUrl: ${KEY_VAULT_URI}/postgres-password
+      # The API's own limited role, not the admin (see backend/app/db/api_role.py)
+      - name: postgres-api-password
+        keyVaultUrl: ${KEY_VAULT_URI}/postgres-api-password
         identity: ${IDENTITY_ID}
   template:
     containers:
@@ -34,9 +35,9 @@ properties:
           - name: POSTGRES_DB
             value: ${DB_NAME}
           - name: POSTGRES_USER
-            value: ${DB_ADMIN}
+            value: ${API_DB_USER}
           - name: POSTGRES_PASSWORD
-            secretRef: postgres-password
+            secretRef: postgres-api-password
           - name: POSTGRES_SSLMODE
             value: require
           - name: REDIS_HOST

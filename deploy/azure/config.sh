@@ -14,6 +14,7 @@ SUFFIX="$(az account show --query id -o tsv | shasum | cut -c1-6)"
 DB_SERVER="foodscape-db-${SUFFIX}"
 DB_NAME="foodscape"
 DB_ADMIN="foodscape"
+API_DB_USER="foodscape_api" # the API's limited role (created by the migrate job)
 KEY_VAULT="foodscape-kv-${SUFFIX}"
 IDENTITY="foodscape-identity"
 ENVIRONMENT="foodscape-env"

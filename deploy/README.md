@@ -31,11 +31,13 @@ Check current prices before creating anything: https://azure.microsoft.com/prici
 
 Push to `main`. Migrations run first; if they fail, the old version keeps running.
 
+**Upgrading a deployment made before the API had its own database role:** re-run `deploy/azure/setup.sh` once before pushing. It skips everything that exists and only adds the new `postgres-api-password` secret to Key Vault. The next deploy's migrate job creates the role.
+
 ## How it's put together
 
 - **Secrets** (database password, Census key) live in Key Vault. The apps read them through a managed identity, so no password is stored in code, images, or GitHub.
 - **GitHub signs in to Azure with OIDC:** each workflow run gets a short-lived token for pushes to `main` of this repo only, so there's no long-lived Azure password stored in GitHub. It can only change resources in `foodscape-rg`.
-- **The database** accepts connections only from Azure services, and only encrypted (`sslmode=require`).
+- **The database** accepts only encrypted connections (`sslmode=require`) with a password. Two roles log in: the admin (migrations and the weekly pipeline, which change data) and `foodscape_api`, which the API uses and which can only read map data and add saved health checks (`backend/app/db/api_role.py`). If the API were compromised, the attacker couldn't drop or change tables.
 - **Redis** runs as a sidecar container inside the API app, since it only holds disposable data (caches and rate-limit counts). The API is capped at one replica so rate limits stay exact. The weekly pipeline can't reach the sidecar to clear the map cache, so new data appears within 24 hours (the cache's expiry).
 - **Scale to zero:** when nobody uses the site, the API stops and costs nothing; the first request afterwards takes a few seconds while it starts.
 

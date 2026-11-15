@@ -22,6 +22,11 @@ class Settings(BaseSettings):
     # "prefer" locally: use encryption if the server offers it (the Docker database doesn't).
     postgres_sslmode: str = "prefer"
 
+    # The limited role the deployed API logs in as. Only the migrate job reads these, to create
+    # the role (app/db/api_role.py); the API itself just gets them as POSTGRES_USER/PASSWORD.
+    api_postgres_user: str = "foodscape_api"
+    api_postgres_password: str = ""
+
     redis_host: str = "localhost"
     redis_port: int = 6379
 

@@ -13,7 +13,7 @@
 #
 # What gets created:
 #   Resource group        a folder for everything below (free)
-#   Key Vault             stores the database password and Census API key (fractions of a cent)
+#   Key Vault             stores the database passwords and Census API key (fractions of a cent)
 #   Managed identity      lets the apps read Key Vault without a password (free)
 #   PostgreSQL            Flexible Server B1ms + PostGIS (free for 12 months on new accounts,
 #                         then roughly $13/month plus storage)
@@ -56,6 +56,13 @@ if ! az keyvault secret show --vault-name "$KEY_VAULT" --name postgres-password 
     --output none 2>/dev/null; then
   # A long random password; letters and digits only, so it's safe everywhere
   az keyvault secret set --vault-name "$KEY_VAULT" --name postgres-password \
+    --value "$(openssl rand -base64 48 | tr -dc 'A-Za-z0-9' | cut -c1-32)" --output none
+fi
+# The API logs in with its own, limited database role (created by the migrate job; see
+# backend/app/db/api_role.py), so it gets its own password
+if ! az keyvault secret show --vault-name "$KEY_VAULT" --name postgres-api-password \
+    --output none 2>/dev/null; then
+  az keyvault secret set --vault-name "$KEY_VAULT" --name postgres-api-password \
     --value "$(openssl rand -base64 48 | tr -dc 'A-Za-z0-9' | cut -c1-32)" --output none
 fi
 az keyvault secret set --vault-name "$KEY_VAULT" --name census-api-key \
