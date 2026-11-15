@@ -7,7 +7,7 @@ from fastapi.middleware.gzip import GZipMiddleware
 from app.api import geocode, health, health_check, places, tracts
 from app.config import get_settings
 from app.logging_config import configure_logging
-from app.middleware import configure_cors, observe_request
+from app.middleware import add_security_headers, configure_cors, observe_request
 from app.services.health_check import get_health_model
 
 configure_logging()
@@ -28,6 +28,7 @@ app = FastAPI(title="FoodScape Dallas API", lifespan=lifespan)
 app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 configure_cors(app, get_settings().cors_origins)
+app.middleware("http")(add_security_headers)
 app.middleware("http")(observe_request)
 
 app.include_router(health.router)

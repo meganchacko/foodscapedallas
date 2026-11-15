@@ -50,6 +50,27 @@ async def observe_request(request: Request, call_next: RequestResponseEndpoint) 
     return response
 
 
+# Sent with every API response. The API only returns JSON, so these are defense in depth:
+SECURITY_HEADERS = {
+    # Never guess a different content type (e.g. treat a JSON response as HTML and run it)
+    "X-Content-Type-Options": "nosniff",
+    # No site may show API responses inside a frame (blocks clickjacking)
+    "X-Frame-Options": "DENY",
+    # Don't tell other sites which API URL a link was followed from
+    "Referrer-Policy": "no-referrer",
+    # Browsers should only ever use HTTPS for this host, for a year. Ignored over plain HTTP
+    # (local development); production is HTTPS only.
+    "Strict-Transport-Security": "max-age=31536000",
+}
+
+
+async def add_security_headers(request: Request, call_next: RequestResponseEndpoint) -> Response:
+    response = await call_next(request)
+    for name, value in SECURITY_HEADERS.items():
+        response.headers.setdefault(name, value)
+    return response
+
+
 def configure_cors(app: FastAPI, allowed_origins: list[str]) -> None:
     """CORS: browsers block a page on one site from reading responses from another unless the
     server allows it. In production the frontend and API have different addresses, so allow

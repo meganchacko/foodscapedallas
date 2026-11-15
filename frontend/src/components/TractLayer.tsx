@@ -94,7 +94,11 @@ export function TractLayer({
               ? 'No data'
               : `${tract.obesity_pct}% adult obesity`
             : foodAccessLabel(tract, currentMeasure)
-        return `${tractName(tract)}: ${value}`
+        // An element with textContent, not an HTML string: Leaflet would insert a string as
+        // HTML, so text that came from a data source can never be run as markup
+        const text = document.createElement('span')
+        text.textContent = `${tractName(tract)}: ${value}`
+        return text
       },
       { sticky: true },
     )

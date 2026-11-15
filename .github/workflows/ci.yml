@@ -139,6 +139,17 @@ jobs:
           npm ci
           npm run build
 
+      # The site's security headers (frontend/public/staticwebapp.config.json) include a
+      # Content-Security-Policy listing where the page may connect; it needs the API's address,
+      # which is only known after deploying the API
+      - name: Allow the API in the Content-Security-Policy
+        working-directory: frontend
+        env:
+          API_URL: ${{ steps.deploy.outputs.api_url }}
+        run: |
+          sed -i "s#__API_ORIGIN__#${API_URL}#" dist/staticwebapp.config.json
+          if grep -q __API_ORIGIN__ dist/staticwebapp.config.json; then exit 1; fi
+
       - name: Publish the frontend
         uses: Azure/static-web-apps-deploy@v1
         with:
