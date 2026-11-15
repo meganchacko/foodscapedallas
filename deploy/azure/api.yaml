@@ -60,8 +60,12 @@ properties:
         resources:
           cpu: 0.25
           memory: 0.5Gi
-        # A cache: don't save to disk
-        args: ["--save", "", "--appendonly", "no"]
+        # A cache: don't save to disk. Cap memory below the container's 0.5 GiB, and when full,
+        # evict the least recently used keys (allkeys-lru) instead of failing writes, so a flood
+        # of new address searches can't crash Redis. Losing a cached key only costs a slower
+        # request; losing a rate-limit count briefly allows a few extra requests.
+        args:
+          ["--save", "", "--appendonly", "no", "--maxmemory", "400mb", "--maxmemory-policy", "allkeys-lru"]
     scale:
       minReplicas: 0 # scale to zero when idle (the first request after a while takes a few seconds)
       # One replica: each has its own Redis, so more replicas would split the rate-limit counts.
